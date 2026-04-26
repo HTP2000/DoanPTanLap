@@ -3,6 +3,7 @@ export async function onRequestPost(context) {
     const { message } = await request.json();
 
     try {
+        // 1. KÉO KIẾN THỨC NỀN TỪ GOOGLE SHEET
         let contextText = "Đây là thông tin chuẩn của Phường Tân Lập:\n";
         try {
             const kbResponse = await fetch(env.GOOGLE_SCRIPT_URL);
@@ -15,47 +16,40 @@ export async function onRequestPost(context) {
                 }
             }
         } catch (e) {
-            console.log("Lỗi: Không lấy được kiến thức nền.");
+            console.log("Cảnh báo: Không kết nối được Google Sheet.");
         }
 
-        const openAiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        // 2. GỌI SANG GOOGLE GEMINI API (Thay cho OpenAI)
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    {
-                        role: "system", 
-                        content: `Bạn là trợ lý ảo của Đoàn Phường Tân Lập. Hãy ưu tiên dựa vào thông tin sau để trả lời:\n${contextText}\nNếu câu hỏi của người dùng không nằm trong thông tin trên, hãy trả lời theo hiểu biết của bạn một cách ngắn gọn, lịch sự, thân thiện.`
-                    },
-                    { role: "user", content: message }
-                ]
+                system_instruction: {
+                    parts: [{ text: `Bạn là trợ lý ảo của Đoàn Phường Tân Lập. Hãy ưu tiên dựa vào thông tin sau để trả lời:\n${contextText}\nNếu câu hỏi không nằm trong thông tin trên, hãy trả lời ngắn gọn, lịch sự, thân thiện.` }]
+                },
+                contents: [{ parts: [{ text: message }] }]
             })
         });
         
-        const openAiData = await openAiRes.json();
+        const geminiData = await geminiRes.json();
         
-        // NẾU CÓ LỖI TỪ OPENAI, IN THẲNG RA MÀN HÌNH CHAT
-        if (openAiData.error) {
-            return new Response(JSON.stringify({ reply: `⚠️ Lỗi từ OpenAI: ${openAiData.error.message}` }), {
-                headers: { "Content-Type": "application/json" }
-            });
+        if (geminiData.error) {
+            return new Response(JSON.stringify({ reply: `⚠️ Lỗi từ Gemini: ${geminiData.error.message}` }), { headers: { "Content-Type": "application/json" } });
         }
 
-        const answer = openAiData.choices[0].message.content;
+        const answer = geminiData.candidates[0].content.parts[0].text;
 
+        // 3. LƯU LỊCH SỬ VÀO EXCEL
         try {
             await fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ user: message, bot: answer }) 
             });
         } catch (e) {
-            console.log("Lỗi: Không lưu được lịch sử.");
+            console.log("Cảnh báo: Không lưu được lịch sử.");
         }
 
+        // 4. TRẢ KẾT QUẢ VỀ WEB
         return new Response(JSON.stringify({ reply: answer }), {
             headers: { "Content-Type": "application/json" }
         });
