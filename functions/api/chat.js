@@ -3,7 +3,6 @@ export async function onRequestPost(context) {
     const { message } = await request.json();
 
     try {
-        // 1. KÉO KIẾN THỨC NỀN
         let contextText = "Đây là thông tin chuẩn của Phường Tân Lập:\n";
         try {
             const kbResponse = await fetch(env.GOOGLE_SCRIPT_URL);
@@ -16,10 +15,9 @@ export async function onRequestPost(context) {
                 }
             }
         } catch (e) {
-            console.log("Cảnh báo: Không kết nối được Google Sheet để lấy kiến thức nền.");
+            console.log("Lỗi: Không lấy được kiến thức nền.");
         }
 
-        // 2. GỌI SANG CHATGPT
         const openAiRes = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -40,7 +38,7 @@ export async function onRequestPost(context) {
         
         const openAiData = await openAiRes.json();
         
-        // KIỂM TRA LỖI TỪ OPENAI (Cực kỳ quan trọng)
+        // NẾU CÓ LỖI TỪ OPENAI, IN THẲNG RA MÀN HÌNH CHAT
         if (openAiData.error) {
             return new Response(JSON.stringify({ reply: `⚠️ Lỗi từ OpenAI: ${openAiData.error.message}` }), {
                 headers: { "Content-Type": "application/json" }
@@ -49,17 +47,15 @@ export async function onRequestPost(context) {
 
         const answer = openAiData.choices[0].message.content;
 
-        // 3. LƯU LỊCH SỬ VÀO EXCEL
         try {
             await fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ user: message, bot: answer }) 
             });
         } catch (e) {
-            console.log("Cảnh báo: Không lưu được lịch sử vào Google Sheet.");
+            console.log("Lỗi: Không lưu được lịch sử.");
         }
 
-        // 4. TRẢ KẾT QUẢ VỀ WEB
         return new Response(JSON.stringify({ reply: answer }), {
             headers: { "Content-Type": "application/json" }
         });
