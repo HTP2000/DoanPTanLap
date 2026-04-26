@@ -574,11 +574,27 @@ const globalData = {
             if (e.key === 'Enter') sendMessage();
         }
 
-        async function sendMessage() {
+       async function sendMessage() {
             const message = chatInput.value.trim();
             if (!message) return;
 
-            // Hiển thị tin nhắn của người dùng
+            // --- ĐOẠN MỚI THÊM: GOM DATA TỪ GIAO DIỆN WEB CHO AI ĐỌC ---
+            let webLocations = "";
+            if (typeof ASSETS !== 'undefined') {
+                const allPlaces = [
+                    ...(ASSETS.coQuanNhaNuoc || []),
+                    ...(ASSETS.diemVanHoa || []),
+                    ...(ASSETS.diemHoiTruong || [])
+                ];
+                allPlaces.forEach(p => {
+                    if (p.title || p.badge) {
+                        webLocations += `- Cơ sở: ${p.title || p.badge} | Địa chỉ: ${p.address || 'Đang cập nhật'} | Link bản đồ: ${p.mapLink || ''}\n`;
+                    }
+                });
+            }
+            // -------------------------------------------------------------
+
+            // 1. Hiển thị tin nhắn người dùng
             chatInput.value = '';
             chatInput.disabled = true;
             sendBtn.disabled = true;
@@ -589,7 +605,7 @@ const globalData = {
                 </div>`;
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // Hiện trạng thái AI đang gõ (...)
+            // 2. Hiện trạng thái AI đang gõ
             const typingId = 'typing-' + Date.now();
             chatMessages.innerHTML += `
                 <div id="${typingId}" class="flex items-start gap-2">
@@ -600,16 +616,16 @@ const globalData = {
                 </div>`;
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // Gửi lên Cloudflare API
+            // 3. Gửi lên Cloudflare API (Kèm theo dữ liệu webLocations)
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message: message, webData: webLocations }) // <-- Truyền thêm data web ở đây
                 });
                 const data = await response.json();
                 
-                // Hiển thị câu trả lời của AI
+                // 4. Hiển thị câu trả lời AI
                 document.getElementById(typingId).remove();
                 chatMessages.innerHTML += `
                     <div class="flex items-start gap-2">

@@ -1,9 +1,12 @@
 export async function onRequestPost(context) {
     const { request, env } = context;
-    const { message } = await request.json();
+    const body = await request.json();
+    const message = body.message;
+    const webData = body.webData || ""; 
 
     try {
-        let contextText = "Đây là thông tin chuẩn của Phường Tân Lập:\n";
+        // 1. KÉO KIẾN THỨC NỀN TỪ EXCEL VÀ GỘP VỚI GIAO DIỆN WEB
+        let contextText = "THÔNG TIN CÁC ĐỊA ĐIỂM TRÊN WEB (Ưu tiên lấy Link bản đồ ở đây):\n" + webData + "\nTHÔNG TIN HỎI ĐÁP KHÁC:\n";
         try {
             const kbResponse = await fetch(env.GOOGLE_SCRIPT_URL);
             if (kbResponse.ok) {
@@ -15,52 +18,49 @@ export async function onRequestPost(context) {
                 }
             }
         } catch (e) {
-            console.log("Lỗi: Không lấy được kiến thức nền.");
+            console.log("Không kéo được tài liệu nội bộ.");
         }
 
-        const openAiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    {
-                        role: "system", 
-                        content: `Bạn là trợ lý ảo của Đoàn Phường Tân Lập. Hãy ưu tiên dựa vào thông tin sau để trả lời:\n${contextText}\nNếu câu hỏi của người dùng không nằm trong thông tin trên, hãy trả lời theo hiểu biết của bạn một cách ngắn gọn, lịch sự, thân thiện.`
-                    },
-                    { role: "user", content: message }
-                ]
-            })
+        // 2. GỌI TRỰC TIẾP AI CỦA CLOUDFLARE (Không xài Gemini/ChatGPT)
+        const aiResponse = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
+            messages: [
+                { 
+                    role: "system", 
+                    content: `Bạn là trợ lý ảo của Đoàn Phường Tân Lập, Thành phố Buôn Ma Thuột, tỉnh Đắk Lắk.
+QUY TẮC TỐI THƯỢNG:
+1. Bạn đang ở Buôn Ma Thuột, Đắk Lắk. Tuyệt đối KHÔNG nhắc đến TP.HCM, Hà Nội hay bất kỳ nơi nào khác.
+2. Dựa vào [DỮ LIỆU ĐỊA PHƯƠNG] bên dưới để trả lời. Nếu không có thông tin, hãy nói: "Xin lỗi, mình chưa có thông tin này. Bạn vui lòng liên hệ trực tiếp trụ sở Đoàn Phường Tân Lập (TP. Buôn Ma Thuột) nhé!"
+3. Không tự bịa thông tin. Trả lời bằng tiếng Việt.
+
+[DỮ LIỆU ĐỊA PHƯƠNG]
+${contextText}
+
+HƯỚNG DẪN TẠO NÚT CHỈ ĐƯỜNG:
+Nếu câu trả lời của bạn có nhắc đến một địa điểm mà trong [DỮ LIỆU ĐỊA PHƯƠNG] có kèm "Link bản đồ" (bắt đầu bằng http), bạn BẮT BUỘC phải chèn đoạn mã HTML sau vào DƯỚI CÙNG của câu trả lời:
+<br><br><a href="ĐIỀN_LINK_BẢN_ĐỒ_VÀO_ĐÂY" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-sm hover:bg-blue-700"><i class="fa-solid fa-map-location-dot mr-2"></i> Chỉ đường ngay</a>` 
+                },
+                { role: "user", content: message }
+            ]
         });
-        
-        const openAiData = await openAiRes.json();
-        
-        // NẾU CÓ LỖI TỪ OPENAI, IN THẲNG RA MÀN HÌNH CHAT
-        if (openAiData.error) {
-            return new Response(JSON.stringify({ reply: `⚠️ Lỗi từ OpenAI: ${openAiData.error.message}` }), {
-                headers: { "Content-Type": "application/json" }
-            });
-        }
 
-        const answer = openAiData.choices[0].message.content;
+        const answer = aiResponse.response;
 
+        // 3. LƯU LỊCH SỬ VÀO EXCEL
         try {
             await fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ user: message, bot: answer }) 
             });
         } catch (e) {
-            console.log("Lỗi: Không lưu được lịch sử.");
+            console.log("Không lưu được lịch sử.");
         }
 
+        // 4. TRẢ KẾT QUẢ VỀ WEB
         return new Response(JSON.stringify({ reply: answer }), {
             headers: { "Content-Type": "application/json" }
         });
 
     } catch (error) {
-        return new Response(JSON.stringify({ reply: `❌ Hệ thống sập do lỗi Backend: ${error.message}` }), { status: 500 });
+        return new Response(JSON.stringify({ reply: `❌ Lỗi hệ thống: ${error.message}` }), { status: 500 });
     }
 }
