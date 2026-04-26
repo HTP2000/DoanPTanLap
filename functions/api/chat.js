@@ -3,7 +3,23 @@ export async function onRequestPost(context) {
     const { message } = await request.json();
 
     try {
+        // ==========================================
+        // TÍNH NĂNG ĐẶC BIỆT: XOAY VÒNG API KEY
+        // ==========================================
+        // Gom các Key bạn đã cài trên Cloudflare vào 1 danh sách
+        const keys = [env.GEMINI_API_KEY_1, env.GEMINI_API_KEY_2, env.GEMINI_API_KEY_3].filter(Boolean);
+        
+        // Nếu không tìm thấy key nào
+        if (keys.length === 0) {
+            return new Response(JSON.stringify({ reply: "⚠️ Hệ thống chưa được cấp chìa khóa API." }), { headers: { "Content-Type": "application/json" } });
+        }
+        
+        // Chọn ngẫu nhiên 1 key trong danh sách
+        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+
+        // ==========================================
         // 1. KÉO KIẾN THỨC NỀN TỪ GOOGLE SHEET
+        // ==========================================
         let contextText = "Đây là thông tin chuẩn của Phường Tân Lập:\n";
         try {
             const kbResponse = await fetch(env.GOOGLE_SCRIPT_URL);
@@ -19,8 +35,10 @@ export async function onRequestPost(context) {
             console.log("Cảnh báo: Không kết nối được Google Sheet.");
         }
 
-        // 2. GỌI SANG GOOGLE GEMINI API (Thay cho OpenAI)
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
+        // ==========================================
+        // 2. GỌI SANG GOOGLE GEMINI BẰNG KEY NGẪU NHIÊN
+        // ==========================================
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${randomKey}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -39,7 +57,9 @@ export async function onRequestPost(context) {
 
         const answer = geminiData.candidates[0].content.parts[0].text;
 
+        // ==========================================
         // 3. LƯU LỊCH SỬ VÀO EXCEL
+        // ==========================================
         try {
             await fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
@@ -49,7 +69,9 @@ export async function onRequestPost(context) {
             console.log("Cảnh báo: Không lưu được lịch sử.");
         }
 
+        // ==========================================
         // 4. TRẢ KẾT QUẢ VỀ WEB
+        // ==========================================
         return new Response(JSON.stringify({ reply: answer }), {
             headers: { "Content-Type": "application/json" }
         });
