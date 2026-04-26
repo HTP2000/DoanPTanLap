@@ -1,11 +1,471 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import '../styles/global.css';
+import { sanityClient } from "sanity:client";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// ==========================================================
+// 1. KÉO TOÀN BỘ DỮ LIỆU TỪ SANITY VỀ ASTRO
+// ==========================================================
+const { rawCoQuanData, vanHoaData, tdpData } = await sanityClient.fetch(`{
+  "rawCoQuanData": *[_type == "coQuanNhaNuoc"] | order(order asc) {
+    "id": _id, title, theme, unitLabel, roomLabel, description, address, mapLink,
+    "image": image.asset->url,
+    departments[] { 
+        name, personName, nameColor, nameWeight, nameStyle, nameSize, 
+        roleColor, roleWeight, roleStyle, roleSize,
+        roles, address 
+    }
+  },
+  "vanHoaData": *[_type == "diemVanHoa"] | order(order asc) {
+    "id": _id, title, description, address, mapLink,
+    "image": image.asset->url,
+    gallery[] { "image": image.asset->url, caption }
+  },
+  "tdpData": *[_type == "hoiTruong"] | order(order asc) {
+    "id": _id, badge, address, mapLink
+  }
+}`);
+
+// Xử lý dữ liệu Portable Text (Chữ in đậm, xuống dòng) của Sanity thành HTML
+const coQuanData = rawCoQuanData.map((coquan: any) => {
+    return {
+        ...coquan,
+        departments: (coquan.departments || []).map((dept: any) => {
+            let rolesHtml = '';
+            if (dept.roles && Array.isArray(dept.roles)) {
+                rolesHtml = dept.roles.map((block: any) => {
+                    if (block._type !== 'block' || !block.children) return '';
+                    let pContent = block.children.map((child: any) => {
+                        let text = child.text || '';
+                        if (child.marks && child.marks.includes('strong')) text = `<strong>${text}</strong>`;
+                        if (child.marks && child.marks.includes('em')) text = `<em>${text}</em>`;
+                        return text;
+                    }).join('');
+                    return `<div class="mb-1">${pContent}</div>`;
+                }).join('');
+            }
+            return { ...dept, rolesHtml };
+        })
+    }
+});
+
+// ==========================================================
+// 2. DỮ LIỆU TĨNH GLOBAL
+// ==========================================================
+const globalData = {
+    // Đã sửa lại đường dẫn HTML chuẩn để logo hiển thị
+    logo: '<img src="/assets/logodoan.png" alt="Logo" class="w-full h-full object-contain drop-shadow-md">', 
+    titleLine1: "ĐOÀN TNCS HỒ CHÍ MINH PHƯỜNG TÂN LẬP",
+    titleLine2: "",
+    subtitles: [
+        'Thanh Niên Xung Kích - Sáng Tạo Chuyển Đổi Số', 
+        'Thông Tin Nhanh Chóng - Tiện Ích', 
+        'Chuyển Đổi Số - Phục Vụ Nhân Dân', 
+    ],
+    footerText: "Công trình Thanh Niên Địa Phương Số"
+};
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ĐOÀN THANH NIÊN PHƯỜNG TÂN LẬP</title>
+    
+    <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-4RR1J5D2RQ"></script>
+    <script is:inline>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-4RR1J5D2RQ');
+    </script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+</head>
+<body class="text-slate-800 antialiased relative selection:bg-brand-blue selection:text-white">
+
+    <header class="bg-animated-gradient text-white shadow-xl sticky top-0 z-40 border-b border-blue-400/30 relative">
+        <div class="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 pr-2">
+                <div id="app-logo-container" class="w-12 h-12 min-[375px]:w-14 min-[375px]:h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center floating-logo drop-shadow-xl flex-shrink-0">
+                </div>
+                <div class="overflow-hidden flex-1 min-w-0 flex flex-col justify-center">
+                    <h1 id="app-title-line1" class="text-[10px] min-[375px]:text-[11.5px] sm:text-base md:text-xl font-bold uppercase tracking-tight sm:tracking-wide drop-shadow-md leading-tight whitespace-nowrap"></h1>
+                    <h2 id="app-title-line2" class="text-[10px] min-[375px]:text-[11.5px] sm:text-base md:text-xl font-bold uppercase tracking-tight sm:tracking-wide drop-shadow-md leading-tight whitespace-nowrap mt-[1px]"></h2>
+                    <p class="text-brand-light text-[8.5px] min-[375px]:text-[10px] sm:text-sm font-medium mt-0.5 sm:mt-1 whitespace-nowrap overflow-hidden text-ellipsis block"><span id="typed-subtitle"></span></p>
+                </div>
+            </div>
+            
+            <nav class="hidden md:flex items-center gap-2 font-medium text-sm bg-white/10 p-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] flex-shrink-0">
+                <a href="#nhanuoc" class="px-4 py-2 rounded-full text-white hover:bg-white hover:text-brand-blue hover:shadow-lg transition-all duration-300">Cơ Quan Nhà Nước</a>
+                <a href="#vanhoa" class="px-4 py-2 rounded-full text-white hover:bg-white hover:text-brand-blue hover:shadow-lg transition-all duration-300">Điểm Văn Hóa</a>
+                <a href="#to-dan-pho" class="px-4 py-2 rounded-full text-white hover:bg-white hover:text-brand-blue hover:shadow-lg transition-all duration-300">Hội Trường TDP & Buôn</a>
+            </nav>
+
+            <button id="mobile-menu-btn" class="md:hidden flex items-center justify-center w-9 h-9 min-[375px]:w-10 min-[375px]:h-10 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors focus:outline-none ml-1 flex-shrink-0">
+                <i id="mobile-menu-icon" class="fa-solid fa-bars text-base min-[375px]:text-lg"></i>
+            </button>
+        </div>
+
+        <div id="mobile-menu" class="hidden absolute top-full left-0 w-full bg-white shadow-2xl border-t border-gray-100 flex-col md:hidden z-50">
+            <a href="#nhanuoc" class="mobile-link block px-6 py-4 text-brand-dark font-bold border-b border-gray-100 hover:bg-brand-light transition-colors flex items-center gap-3"><i class="fa-solid fa-landmark text-brand-blue w-5"></i> Cơ Quan Nhà Nước</a>
+            <a href="#vanhoa" class="mobile-link block px-6 py-4 text-brand-dark font-bold border-b border-gray-100 hover:bg-brand-light transition-colors flex items-center gap-3"><i class="fa-solid fa-landmark text-brand-blue w-5"></i> Các Điểm Văn Hóa</a>
+            <a href="#to-dan-pho" class="mobile-link block px-6 py-4 text-brand-dark font-bold hover:bg-brand-light transition-colors flex items-center gap-3"><i class="fa-solid fa-map-location-dot text-brand-blue w-5"></i> Hội Trường TDP & Buôn</a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-12 space-y-20 relative z-20">
+        <section id="nhanuoc" class="scroll-mt-24">
+            <div class="text-center mb-10" data-aos="fade-up">
+                <h2 class="inline-block text-2xl md:text-3xl font-bold text-slate-800 section-title-line mb-4">Cơ Quan Nhà Nước</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto text-sm md:text-base">Thông liên hệ và cơ cấu tổ chức của các cơ quan ban ngành tại địa phương.</p>
+            </div>
+            <div id="nhanuoc-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"></div>
+        </section>
+
+        <section id="vanhoa" class="scroll-mt-24 bg-white rounded-3xl p-6 sm:p-10 shadow-[0_0_40px_rgba(0,0,0,0.03)] border border-slate-100">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4" data-aos="fade-right">
+                <div>
+                    <h2 class="inline-block text-2xl md:text-3xl font-bold text-slate-800 section-title-line mb-4">Điểm Văn Hóa Lịch Sử</h2>
+                    <p class="text-slate-500 text-sm md:text-base">Khám phá các di tích lịch sử và trung tâm văn hóa nổi bật trên địa bàn.</p>
+                </div>
+                <div class="hidden md:block text-5xl text-brand-light">
+                    <i class="fa-solid fa-monument"></i>
+                </div>
+            </div>
+            <div id="vanhoa-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8"></div>
+        </section>
+
+        <section id="to-dan-pho" class="scroll-mt-24 pb-12">
+            <div class="text-center mb-10" data-aos="fade-up">
+                <h2 class="inline-block text-2xl md:text-3xl font-bold text-slate-800 section-title-line mb-4">Hội Trường TDP & Buôn</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto text-sm md:text-base">Địa điểm sinh hoạt cộng đồng của các Tổ dân phố và các Buôn.</p>
+            </div>
+            <div id="hoitruong-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"></div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-300 py-12 text-center border-t-4 border-brand-blue relative">
+        <div class="max-w-4xl mx-auto px-4">
+            <h3 id="app-footer" class="font-bold text-lg md:text-xl text-white mb-2 uppercase tracking-wide"></h3>
+            <p class="text-sm text-slate-400 mb-6">Được thực hiện bởi Đoàn TNCS Hồ Chí Minh Phường Tân Lập</p>
+            <div class="flex justify-center gap-4">
+                <a href="https://www.facebook.com/share/1CSq8WCGVH/?mibextid=wwXIfr" target="_blank" title="Facebook Đoàn Phường" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.tiktok.com/@doanphuongtanlap_?_r=1&_t=ZS-95Zb9dLBsUU" target="_blank" title="Tiktok Đoàn Phường" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-black hover:text-white transition-all"><i class="fa-brands fa-tiktok"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="departmentModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300" onclick="closeModal()"></div>
+        <div id="modalContent" class="relative bg-[#f8fafc] rounded-2xl sm:rounded-3xl shadow-2xl border border-white/50 w-[95vw] sm:w-[90vw] max-w-6xl h-[90vh] sm:h-[85vh] p-4 sm:p-8 transform scale-90 opacity-0 transition-all duration-500 ease-out flex flex-col overflow-hidden">
+            <button onclick="closeModal()" class="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-red-500 hover:text-white text-slate-600 shadow-md transition-all duration-300 group">
+                <i class="fa-solid fa-times text-xl group-hover:rotate-90 transition-transform duration-300"></i>
+            </button>
+            <div class="border-b border-slate-200 pb-4 mb-4 sm:mb-6 pr-12 flex-shrink-0 relative z-10">
+                <h3 id="modalTitle" class="text-xl sm:text-2xl md:text-3xl font-extrabold text-brand-blue leading-snug">Tiêu đề</h3>
+                <p id="modalSubtitle" class="text-sm text-slate-500 mt-2 font-medium">Mô tả phụ</p>
+            </div>
+            <div class="overflow-y-auto pr-2 custom-scrollbar flex-1 pb-4 relative z-10">
+                <div id="modalList"></div>
+            </div>
+            <div class="absolute bottom-0 right-0 w-64 h-64 bg-brand-light rounded-tl-full opacity-50 pointer-events-none z-0"></div>
+        </div>
+    </div>
+
+    <script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script is:inline src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+
+    <script is:inline define:vars={{ coQuanData, vanHoaData, tdpData, globalData }}>
+        
+        const ASSETS = {
+            global: globalData,
+            coQuanNhaNuoc: coQuanData,
+            diemVanHoa: vanHoaData,
+            diemHoiTruong: tdpData
+        };
+
+        const departmentData = {};
+        ASSETS.coQuanNhaNuoc.forEach(item => {
+            departmentData[item.id] = { 
+                title: item.title, 
+                departments: item.departments, 
+                theme: item.theme,
+                unitLabel: item.unitLabel || "Đồng chí",
+                roomLabel: item.roomLabel || "Tầng / Phòng"
+            };
+        });
+
+        const themeColors = {
+            blue: { text: 'text-blue-600', bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
+            red: { text: 'text-red-600', bg: 'bg-red-50', badge: 'bg-red-100 text-red-700' },
+            green: { text: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
+            yellow: { text: 'text-amber-600', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700' }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Mobile Menu
+            const mobileBtn = document.getElementById('mobile-menu-btn');
+            const mobileIcon = document.getElementById('mobile-menu-icon');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileLinks = document.querySelectorAll('.mobile-link');
+
+            mobileBtn.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.contains('hidden');
+                if(isHidden) {
+                    mobileMenu.classList.remove('hidden');
+                    mobileMenu.classList.add('flex');
+                    mobileIcon.classList.remove('fa-bars');
+                    mobileIcon.classList.add('fa-xmark'); 
+                } else {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.classList.remove('flex');
+                    mobileIcon.classList.remove('fa-xmark');
+                    mobileIcon.classList.add('fa-bars'); 
+                }
+            });
+
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.classList.remove('flex');
+                    mobileIcon.classList.remove('fa-xmark');
+                    mobileIcon.classList.add('fa-bars');
+                });
+            });
+			
+            document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
+            document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
+            document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
+            document.getElementById('app-footer').innerText = ASSETS.global.footerText;
+
+            // Render Mục 1: Cơ quan nhà nước (Từ Sanity)
+            const nhaNuocContainer = document.getElementById('nhanuoc-list');
+            ASSETS.coQuanNhaNuoc.forEach((item, index) => {
+                const t = themeColors[item.theme] || themeColors.blue;
+                nhaNuocContainer.innerHTML += `
+                    <div class="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col h-full transform hover:-translate-y-2 cursor-pointer" data-aos="fade-up" data-aos-delay="${(index+1)*100}" onclick="openModal('${item.id}', 'nhanuoc')">
+                        <div class="relative h-48 sm:h-56 overflow-hidden bg-slate-100">
+                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Hình+ảnh';">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+                            <h3 class="absolute bottom-4 left-4 right-4 text-white font-bold text-xl drop-shadow-md leading-tight">${item.title}</h3>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col relative">
+                            <div class="absolute top-0 right-4 w-12 h-12 rounded-full ${t.bg} ${t.text} flex items-center justify-center -translate-y-1/2 shadow-sm border-4 border-white group-hover:rotate-12 transition-transform">
+                                <i class="fa-solid fa-building text-lg"></i>
+                            </div>
+                            <p class="text-slate-600 text-sm flex-1 mb-4 mt-2 line-clamp-3">${item.description || ''}</p>
+                            ${item.address ? `
+                            <a href="${item.mapLink || '#'}" target="_blank" onclick="event.stopPropagation()" class="mt-auto bg-slate-50 hover:bg-slate-100 p-3 rounded-2xl flex items-center gap-3 transition-colors group/map">
+                                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-red-500 shadow-sm group-hover/map:bg-red-500 group-hover/map:text-white transition-colors">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                </div>
+                                <span class="text-xs font-medium text-slate-700 flex-1 truncate">${item.address}</span>
+                                <i class="fa-solid fa-arrow-right text-slate-400 group-hover/map:text-red-500 group-hover/map:translate-x-1 transition-all"></i>
+                            </a>` : ''}
+                        </div>
+                    </div>`;
+            });
+
+            // Render Mục 2: Điểm Văn Hóa (Từ Sanity)
+            const vanHoaContainer = document.getElementById('vanhoa-list');
+            ASSETS.diemVanHoa.forEach((item, index) => {
+                vanHoaContainer.innerHTML += `
+                    <div class="group flex flex-col sm:flex-row bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 transform hover:-translate-y-2 cursor-pointer" data-aos="fade-up" data-aos-delay="${(index+1)*100}" onclick="openModal('${item.id}', 'vanhoa')">
+                        <div class="sm:w-2/5 h-56 sm:h-auto relative overflow-hidden bg-slate-100 shrink-0">
+                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" onerror="this.onerror=null;this.src='https://placehold.co/600x800/e2e8f0/64748b?text=Ảnh+Minh+Hoạ';">
+                            <div class="absolute inset-0 bg-brand-blue/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        </div>
+                        <div class="p-6 flex-1 flex flex-col justify-center">
+                            <div class="inline-block px-3 py-1 bg-brand-light text-brand-blue rounded-full text-xs font-bold mb-3 w-max">Điểm Di Tích / Văn Hóa</div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-brand-blue transition-colors">${item.title}</h3>
+                            <p class="text-slate-600 text-sm mb-4 line-clamp-3">${item.description}</p>
+                            <a href="${item.mapLink}" target="_blank" onclick="event.stopPropagation()" class="mt-auto inline-flex items-center gap-2 text-sm text-brand-blue font-semibold hover:text-brand-dark group/link">
+                                <i class="fa-solid fa-map-location-dot"></i> Xem trên bản đồ
+                                <i class="fa-solid fa-arrow-right-long opacity-0 -ml-2 group-hover/link:opacity-100 group-hover/link:ml-1 transition-all"></i>
+                            </a>
+                        </div>
+                    </div>`;
+            });
+
+            // Render Mục 3: Hội trường (Từ Sanity)
+            const hoiTruongContainer = document.getElementById('hoitruong-list');
+            ASSETS.diemHoiTruong.forEach((item, index) => {
+                let delay = (index % 3) * 100; 
+                hoiTruongContainer.innerHTML += `
+                    <a href="${item.mapLink}" target="_blank" class="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col hover:shadow-lg hover:shadow-blue-900/10 hover:-translate-y-2 hover:border-brand-blue/30 transition-all duration-300 cursor-pointer group" data-aos="fade-up" data-aos-delay="${delay}">
+                        <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-blue-50/70 rounded-bl-full -z-0 group-hover:scale-125 transition-transform duration-500"></div>
+                        <div class="relative z-10 flex flex-col h-full">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-light text-brand-blue rounded-full text-[10px] sm:text-xs font-semibold mb-3 sm:mb-4 w-fit">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>${item.badge}</span>
+                            </div>
+                            <div class="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm">
+                                <i class="fa-solid fa-location-dot text-slate-400 mt-1 w-3 sm:w-4 text-center"></i>
+                                <div><span class="text-slate-500 block text-[10px] sm:text-[11px] mb-0.5 uppercase tracking-wide">Địa chỉ:</span><span class="text-slate-800 font-medium">${item.address}</span></div>
+                            </div>
+                        </div>
+                    </a>`;
+            });
+
+            new Typed('#typed-subtitle', {
+                strings: ASSETS.global.subtitles,
+                typeSpeed: 60, backSpeed: 30, backDelay: 2500, loop: true
+            });
+
+            AOS.init({ duration: 800, once: true, offset: 50 });
+        });
+
+        // =========================================================================
+        // XỬ LÝ MODAL (CẬP NHẬT CHO SANITY & CÁC TÙY CHỈNH STYLE)
+        // =========================================================================
+        const modal = document.getElementById('departmentModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalSubtitle = document.getElementById('modalSubtitle');
+        const modalList = document.getElementById('modalList');
+
+        window.openModal = function(itemId, type) {
+            modalList.innerHTML = '';
+            
+            if (type === 'nhanuoc') {
+                const data = departmentData[itemId];
+                if (!data) return;
+                
+                modalTitle.textContent = data.title;
+                modalSubtitle.textContent = "Sơ đồ các phòng ban & Cán bộ phụ trách";
+                modalList.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-6";
+
+                (data.departments || []).forEach((dept, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer hover:border-brand-blue/30';
+                    
+                    // Lấy style cho Tên
+                    let nColor = dept.nameColor || 'text-brand-blue';
+                    let nWeight = dept.nameWeight || 'font-bold';
+                    let nStyle = dept.nameStyle || 'not-italic';
+                    let nSize = dept.nameSize || 'text-base';
+
+                    // Lấy style cho Chức danh
+                    let rColor = dept.roleColor || 'text-slate-500';
+                    let rWeight = dept.roleWeight || 'font-normal';
+                    let rStyle = dept.roleStyle || 'italic';
+                    let rSize = dept.roleSize || 'text-xs';
+
+                    // Xử lý Tên cán bộ (từ Sanity kèm style tùy chỉnh)
+                    let nameHtml = dept.personName 
+                        ? `<span class="${nColor} ${nWeight} ${nStyle} ${nSize} uppercase block mb-1">${dept.personName}</span>` 
+                        : '';
+                    
+                    // Xử lý Chức danh (từ Sanity - đã parse HTML trên server)
+                    let rolesHtml = dept.rolesHtml || '';
+
+                    card.innerHTML = `
+                        <div class="absolute top-0 left-0 w-1 h-full bg-brand-blue opacity-50 group-hover:opacity-100 group-hover:w-2 transition-all duration-300"></div>
+                        <div class="pl-3">
+                            <h4 class="font-bold text-slate-800 text-base mb-3 border-b border-slate-50 pb-2">${dept.name}</h4>
+                            <div class="flex flex-col gap-3 text-sm">
+                                ${nameHtml || rolesHtml ? `
+                                <div class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-blue-50 text-brand-blue flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-tie text-xs"></i></div>
+                                    <div>
+                                        <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.unitLabel}</span>
+                                        ${nameHtml}
+                                        <div class="${rColor} ${rWeight} ${rStyle} ${rSize} leading-snug">
+                                            ${rolesHtml}
+                                        </div>
+                                    </div>
+                                </div>` : ''}
+                                ${dept.address ? `
+                                <div class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-door-open text-xs"></i></div>
+                                    <div><span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.roomLabel}</span><span class="text-slate-700 block">${dept.address}</span></div>
+                                </div>` : ''}
+                            </div>
+                        </div>`;
+                    card.style.opacity = '0';
+                    card.style.animation = `fadeInUp 0.4s ease forwards ${index * 0.05}s`;
+                    modalList.appendChild(card);
+                });
+            } 
+            else if (type === 'vanhoa') {
+                const data = ASSETS.diemVanHoa.find(item => item.id === itemId);
+                if (!data) return;
+
+                modalTitle.textContent = data.title;
+                modalSubtitle.textContent = "Thông tin chi tiết di tích / điểm văn hóa";
+                modalList.className = "flex flex-col gap-6 pb-6";
+                
+                let galleryHTML = (data.gallery && data.gallery.length > 0) ? `
+                    <div class="mt-4">
+                        <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-images text-brand-blue"></i> Thư viện hình ảnh</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${data.gallery.map(img => `
+                                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden group/img cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
+                                    <div class="aspect-[4/3] overflow-hidden bg-slate-100"><img src="${img.image || img}" alt="${img.caption || 'Hình ảnh'}" class="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/500x375/e2e8f0/64748b?text=Hinh+Anh';"></div>
+                                    <div class="p-3 bg-white text-center"><p class="text-sm font-medium text-slate-700">${img.caption || ''}</p></div>
+                                </div>`).join('')}
+                        </div>
+                    </div>` : '';
+
+                const card = document.createElement('div');
+                card.className = "animate-[fadeInUp_0.4s_ease_forwards]";
+                card.innerHTML = `
+                    <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-light rounded-bl-full -z-0 opacity-50"></div>
+                        <div class="relative z-10">
+                            <h4 class="text-lg font-bold text-slate-800 mb-3"><i class="fa-solid fa-circle-info text-brand-blue mr-2"></i>Giới thiệu chung</h4>
+                            <p class="text-slate-600 leading-relaxed text-base md:text-lg text-justify mb-6">${data.description}</p>
+                            ${data.address ? `
+                            <div class="inline-flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 w-full sm:w-auto">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-500 shrink-0"><i class="fa-solid fa-location-dot"></i></div>
+                                    <div><span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Địa chỉ</span><span class="font-medium text-sm text-slate-800">${data.address}</span></div>
+                                </div>
+                                <a href="${data.mapLink}" target="_blank" class="sm:ml-auto w-full sm:w-auto text-center px-4 py-2 bg-brand-blue text-white text-sm font-semibold rounded-xl hover:bg-brand-dark transition-colors shadow-sm">Chỉ đường</a>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    ${galleryHTML}`;
+                modalList.appendChild(card);
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-90', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            history.pushState({ modalOpen: true }, '');
+        };
+
+        window.closeModal = function(isFromPopState = false) {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-90', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modalList.innerHTML = ''; 
+            }, 300);
+            if (isFromPopState !== true && history.state && history.state.modalOpen) {
+                history.back();
+            }
+        };
+
+        document.addEventListener('keydown', (event) => {
+            if (!modal.classList.contains('hidden')) {
+                if (event.key === 'Escape' || event.key === 'Backspace') {
+                    event.preventDefault(); 
+                    window.closeModal();
+                }
+            }
+        });
+
+        window.addEventListener('popstate', (event) => {
+            if (!modal.classList.contains('hidden')) {
+                window.closeModal(true); 
+            }
+        });
+        
+    </script>
+</body>
+</html>

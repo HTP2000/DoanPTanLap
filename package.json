@@ -12,6 +12,11 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^6.1.9"
+    "@sanity/astro": "^3.3.1",
+    "@sanity/client": "^7.22.0",
+    "@tailwindcss/vite": "^4.2.4",
+    "astro": "^6.1.9",
+    "gray-matter": "^4.0.3",
+    "tailwindcss": "^4.2.4"
   }
 }

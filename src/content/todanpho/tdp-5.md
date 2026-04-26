@@ -1,0 +1,5 @@
+---
+badge: "Hội trường TDP 5"
+address: "Số 443/2/9 đường Nguyễn Văn Cừ, phường Tân Lập, tỉnh Đắk Lắk"
+mapLink: "https://maps.app.goo.gl/swvFGgQjd1Ur1KzT8"
+---
