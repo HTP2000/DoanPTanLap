@@ -234,7 +234,7 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars');
                 });
             });
-			
+
             document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
             document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
             document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
@@ -466,6 +466,122 @@ const globalData = {
             }
         });
         
+    </script>
+
+    <div id="chatbot-container" class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div id="chat-window" class="hidden w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 mb-4 overflow-hidden flex-col h-[500px] max-h-[80vh] transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+            <div class="bg-brand-blue p-4 flex items-center justify-between text-white">
+                <div class="flex items-center gap-3">
+                    <img src="/assets/logodoan.png" alt="Logo" class="w-8 h-8 object-contain drop-shadow-md">
+                    <div>
+                        <h4 class="font-bold text-sm">Trợ lý ảo Đoàn Phường</h4>
+                        <p class="text-[10px] text-blue-200">Trực tuyến</p>
+                    </div>
+                </div>
+                <button onclick="toggleChat()" class="text-white hover:text-red-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-3 text-sm">
+                <div class="flex items-start gap-2">
+                    <img src="/assets/logodoan.png" class="w-6 h-6 object-contain flex-shrink-0 mt-1">
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700">
+                        Chào bạn! Mình là trợ lý AI của Đoàn Phường Tân Lập. Bạn cần hỗ trợ thông tin gì về các thủ tục, hoạt động hay địa điểm ạ?
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
+                <input type="text" id="chat-input" placeholder="Nhập câu hỏi của bạn..." class="flex-1 bg-slate-100 text-slate-800 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-sm" onkeypress="handleEnter(event)">
+                <button onclick="sendMessage()" id="send-btn" class="w-9 h-9 rounded-full bg-brand-blue text-white flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane text-xs -ml-0.5"></i>
+                </button>
+            </div>
+        </div>
+
+        <button onclick="toggleChat()" id="chat-toggle-btn" class="w-16 h-16 hover:scale-110 transition-transform duration-300 drop-shadow-xl focus:outline-none flex items-center justify-center bg-transparent">
+            <img src="/assets/logodoan.png" alt="Chat" class="w-full h-full object-contain">
+        </button>
+    </div>
+
+    <script is:inline>
+        const chatWindow = document.getElementById('chat-window');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function toggleChat() {
+            if (chatWindow.classList.contains('hidden')) {
+                chatWindow.classList.remove('hidden');
+                setTimeout(() => {
+                    chatWindow.classList.remove('scale-95', 'opacity-0');
+                    chatWindow.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            } else {
+                chatWindow.classList.remove('scale-100', 'opacity-100');
+                chatWindow.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => { chatWindow.classList.add('hidden'); }, 300);
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // 1. Hiển thị tin nhắn người dùng
+            chatInput.value = '';
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            
+            chatMessages.innerHTML += `
+                <div class="flex items-start gap-2 justify-end">
+                    <div class="bg-brand-blue text-white p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%]">${message}</div>
+                </div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // 2. Hiện trạng thái AI đang gõ
+            const typingId = 'typing-' + Date.now();
+            chatMessages.innerHTML += `
+                <div id="${typingId}" class="flex items-start gap-2">
+                    <img src="/assets/logodoan.png" class="w-6 h-6 object-contain flex-shrink-0 mt-1">
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-500 flex gap-1">
+                        <span class="animate-bounce">.</span><span class="animate-bounce" style="animation-delay: 0.1s">.</span><span class="animate-bounce" style="animation-delay: 0.2s">.</span>
+                    </div>
+                </div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // 3. Gửi lên Cloudflare API
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const data = await response.json();
+                
+                // 4. Hiển thị câu trả lời AI
+                document.getElementById(typingId).remove();
+                chatMessages.innerHTML += `
+                    <div class="flex items-start gap-2">
+                        <img src="/assets/logodoan.png" class="w-6 h-6 object-contain flex-shrink-0 mt-1">
+                        <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-[85%] whitespace-pre-wrap">${data.reply}</div>
+                    </div>`;
+            } catch (error) {
+                document.getElementById(typingId).remove();
+                chatMessages.innerHTML += `
+                    <div class="flex items-start gap-2 text-red-500 text-xs text-center justify-center mt-2">Lỗi kết nối. Vui lòng thử lại.</div>`;
+            }
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+        }
     </script>
 </body>
 </html>
