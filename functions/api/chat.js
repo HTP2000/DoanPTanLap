@@ -27,40 +27,43 @@ export async function onRequestPost(context) {
             console.log("Cảnh báo: Không kết nối được Google Sheet.");
         }
 
-        // 3. TRỘN CÂU LỆNH (Tương thích 100% với mọi đời API của Google)
+        // 3. TRỘN CÂU LỆNH
         const finalPrompt = `Bạn là trợ lý ảo của Đoàn Phường Tân Lập. Hãy ưu tiên dựa vào thông tin sau để trả lời:\n${contextText}\nNếu câu hỏi không nằm trong thông tin trên, hãy trả lời ngắn gọn, lịch sự, thân thiện.\n\n--- CÂU HỎI CỦA NGƯỜI DÂN ---\n${message}`;
 
-        // 4. GỌI GEMINI (Thử bản 1.5 mới nhất trước)
-        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${randomKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: finalPrompt }] }]
-            })
-        });
+        const payload = {
+            contents: [{ parts: [{ text: finalPrompt }] }]
+        };
+
+        // 4. VÒNG LẶP QUÉT TỰ ĐỘNG MODEL (Chống lỗi đổi tên của Google)
+        let geminiRes;
+        let geminiData;
+        // Danh sách các đời model chuẩn nhất hiện tại của Google
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"];
         
-        let geminiData = await geminiRes.json();
-        
-        // 5. TỰ ĐỘNG CHỮA LỖI (Nếu API Key đời cũ không hỗ trợ bản 1.5, tự lùi về bản Pro)
-        if (geminiData.error && geminiData.error.message.includes("is not found")) {
-            console.log("API Key cũ, đang tự động chuyển sang gemini-pro...");
-            geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${randomKey}`, {
+        for (const model of modelsToTry) {
+            geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${randomKey}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: finalPrompt }] }]
-                })
+                body: JSON.stringify(payload)
             });
+            
             geminiData = await geminiRes.json();
+            
+            // Nếu KHÔNG bị lỗi "not found", lập tức thoát vòng lặp để dùng kết quả này
+            if (!geminiData.error || !geminiData.error.message.includes("is not found")) {
+                break; 
+            }
+            console.log(`Model ${model} không khả dụng, đang thử model tiếp theo...`);
         }
 
+        // Nếu thử hết các tên vẫn lỗi (VD: sai mã API), thì báo ra màn hình
         if (geminiData.error) {
             return new Response(JSON.stringify({ reply: `⚠️ Lỗi từ Gemini: ${geminiData.error.message}` }), { headers: { "Content-Type": "application/json" } });
         }
 
         const answer = geminiData.candidates[0].content.parts[0].text;
 
-        // 6. LƯU LỊCH SỬ VÀO EXCEL
+        // 5. LƯU LỊCH SỬ VÀO EXCEL
         try {
             await fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
@@ -70,7 +73,7 @@ export async function onRequestPost(context) {
             console.log("Cảnh báo: Không lưu được lịch sử.");
         }
 
-        // 7. TRẢ KẾT QUẢ VỀ WEB
+        // 6. TRẢ KẾT QUẢ VỀ WEB
         return new Response(JSON.stringify({ reply: answer }), {
             headers: { "Content-Type": "application/json" }
         });
