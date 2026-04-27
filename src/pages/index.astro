@@ -25,7 +25,7 @@ const { rawCoQuanData, vanHoaData, tdpData } = await sanityClient.fetch(`{
   }
 }`);
 
-// Xử lý dữ liệu Portable Text (Chữ in đậm, xuống dòng) của Sanity thành HTML
+// Xử lý dữ liệu Portable Text của Sanity thành HTML
 const coQuanData = rawCoQuanData.map((coquan: any) => {
     return {
         ...coquan,
@@ -52,7 +52,6 @@ const coQuanData = rawCoQuanData.map((coquan: any) => {
 // 2. DỮ LIỆU TĨNH GLOBAL
 // ==========================================================
 const globalData = {
-    // Đã sửa lại đường dẫn HTML chuẩn để logo hiển thị
     logo: '<img src="/assets/logodoan.png" alt="Logo" class="w-full h-full object-contain drop-shadow-md">', 
     titleLine1: "ĐOÀN TNCS HỒ CHÍ MINH PHƯỜNG TÂN LẬP",
     titleLine2: "",
@@ -239,7 +238,7 @@ const globalData = {
             document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
             document.getElementById('app-footer').innerText = ASSETS.global.footerText;
 
-            // Render Mục 1: Cơ quan nhà nước (Từ Sanity)
+            // Render Mục 1: Cơ quan nhà nước
             const nhaNuocContainer = document.getElementById('nhanuoc-list');
             ASSETS.coQuanNhaNuoc.forEach((item, index) => {
                 const t = themeColors[item.theme] || themeColors.blue;
@@ -267,7 +266,7 @@ const globalData = {
                     </div>`;
             });
 
-            // Render Mục 2: Điểm Văn Hóa (Từ Sanity)
+            // Render Mục 2: Điểm Văn Hóa
             const vanHoaContainer = document.getElementById('vanhoa-list');
             ASSETS.diemVanHoa.forEach((item, index) => {
                 vanHoaContainer.innerHTML += `
@@ -288,7 +287,7 @@ const globalData = {
                     </div>`;
             });
 
-            // Render Mục 3: Hội trường (Từ Sanity)
+            // Render Mục 3: Hội trường
             const hoiTruongContainer = document.getElementById('hoitruong-list');
             ASSETS.diemHoiTruong.forEach((item, index) => {
                 let delay = (index % 3) * 100; 
@@ -316,9 +315,7 @@ const globalData = {
             AOS.init({ duration: 800, once: true, offset: 50 });
         });
 
-        // =========================================================================
-        // XỬ LÝ MODAL (CẬP NHẬT CHO SANITY & CÁC TÙY CHỈNH STYLE)
-        // =========================================================================
+        // XỬ LÝ MODAL CHI TIẾT
         const modal = document.getElementById('departmentModal');
         const modalContent = document.getElementById('modalContent');
         const modalTitle = document.getElementById('modalTitle');
@@ -340,24 +337,20 @@ const globalData = {
                     const card = document.createElement('div');
                     card.className = 'bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer hover:border-brand-blue/30';
                     
-                    // Lấy style cho Tên
                     let nColor = dept.nameColor || 'text-brand-blue';
                     let nWeight = dept.nameWeight || 'font-bold';
                     let nStyle = dept.nameStyle || 'not-italic';
                     let nSize = dept.nameSize || 'text-base';
 
-                    // Lấy style cho Chức danh
                     let rColor = dept.roleColor || 'text-slate-500';
                     let rWeight = dept.roleWeight || 'font-normal';
                     let rStyle = dept.roleStyle || 'italic';
                     let rSize = dept.roleSize || 'text-xs';
 
-                    // Xử lý Tên cán bộ (từ Sanity kèm style tùy chỉnh)
                     let nameHtml = dept.personName 
                         ? `<span class="${nColor} ${nWeight} ${nStyle} ${nSize} uppercase block mb-1">${dept.personName}</span>` 
                         : '';
 
-                    // Xử lý Chức danh (từ Sanity - đã parse HTML trên server)
                     let rolesHtml = dept.rolesHtml || '';
 
                     card.innerHTML = `
@@ -394,7 +387,7 @@ const globalData = {
                 if (!data) return;
 
                 modalTitle.textContent = data.title;
-                modalSubtitle.textContent = "Thông tin chi tiết di tích / điểm văn hóa";
+                modalSubtitle.textContent = "Thông chi tiết di tích / điểm văn hóa";
                 modalList.className = "flex flex-col gap-6 pb-6";
                 
                 let galleryHTML = (data.gallery && data.gallery.length > 0) ? `
@@ -436,7 +429,6 @@ const globalData = {
                 modalContent.classList.remove('scale-90', 'opacity-0');
                 modalContent.classList.add('scale-100', 'opacity-100');
             }, 10);
-
             history.pushState({ modalOpen: true }, '');
         };
 
@@ -531,32 +523,29 @@ const globalData = {
             const sendBtn = document.getElementById('send-btn');
             const chatMessages = document.getElementById('chat-messages');
 
-            // MỞ CHAT: Hiện khung chat, Ẩn logo tròn
+            // Ẩn logo khi chat mở
             chatToggle.addEventListener('click', () => {
                 chatWindow.classList.remove('hidden');
                 chatToggle.classList.add('hidden');
             });
 
-            // ĐÓNG CHAT: Ẩn khung chat, Hiện lại logo tròn
+            // Hiện logo khi chat đóng
             closeChat.addEventListener('click', () => {
                 chatWindow.classList.add('hidden');
                 chatToggle.classList.remove('hidden');
             });
 
-            // Bắt sự kiện nhấn phím Enter
             chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
             });
 
-            // Bắt sự kiện bấm nút Gửi
             sendBtn.addEventListener('click', sendMessage);
 
-            // HÀM XỬ LÝ GỬI TIN NHẮN
             async function sendMessage() {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // 1. Gom dữ liệu địa điểm từ Web để gửi cho AI 
+                // Thu thập địa điểm từ web để cấp cho AI
                 let webLocations = "";
                 if (typeof ASSETS !== 'undefined') {
                     const allPlaces = [
@@ -571,7 +560,6 @@ const globalData = {
                     });
                 }
 
-                // 2. Khóa ô nhập liệu và in câu hỏi của người dùng ra màn hình
                 chatInput.value = '';
                 chatInput.disabled = true;
                 sendBtn.disabled = true;
@@ -582,7 +570,6 @@ const globalData = {
                     </div>`;
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                // 3. Hiện trạng thái AI đang gõ (...)
                 const typingId = 'typing-' + Date.now();
                 chatMessages.innerHTML += `
                     <div id="${typingId}" class="flex items-start gap-2">
@@ -595,7 +582,6 @@ const globalData = {
                     </div>`;
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                // 4. Giao tiếp với Cloudflare API
                 try {
                     const response = await fetch('/api/chat', {
                         method: 'POST',
@@ -604,10 +590,8 @@ const globalData = {
                     });
                     const data = await response.json();
                     
-                    // Xóa trạng thái đang gõ
                     document.getElementById(typingId).remove();
                     
-                    // In câu trả lời của AI
                     chatMessages.innerHTML += `
                         <div class="flex items-start gap-2">
                             <div class="w-7 h-7 bg-white rounded-full p-0.5 shadow-sm flex-shrink-0 mt-1 border border-gray-100">
@@ -617,7 +601,6 @@ const globalData = {
                         </div>`;
                         
                 } catch (error) {
-                    // 5. In giao diện LỖI mạng
                     document.getElementById(typingId).remove();
                     chatMessages.innerHTML += `
                         <div class="flex items-start gap-2">
@@ -630,7 +613,6 @@ const globalData = {
                         </div>`;
                 }
 
-                // Mở khóa ô nhập liệu và cuộn xuống đáy
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 chatInput.disabled = false;
                 sendBtn.disabled = false;
