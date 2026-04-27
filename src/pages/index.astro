@@ -178,7 +178,6 @@ const globalData = {
     <script is:inline src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
 
     <script is:inline define:vars={{ coQuanData, vanHoaData, tdpData, globalData }}>
-        
         const ASSETS = {
             global: globalData,
             coQuanNhaNuoc: coQuanData,
@@ -328,7 +327,7 @@ const globalData = {
 
         window.openModal = function(itemId, type) {
             modalList.innerHTML = '';
-            
+
             if (type === 'nhanuoc') {
                 const data = departmentData[itemId];
                 if (!data) return;
@@ -357,7 +356,7 @@ const globalData = {
                     let nameHtml = dept.personName 
                         ? `<span class="${nColor} ${nWeight} ${nStyle} ${nSize} uppercase block mb-1">${dept.personName}</span>` 
                         : '';
-                    
+
                     // Xử lý Chức danh (từ Sanity - đã parse HTML trên server)
                     let rolesHtml = dept.rolesHtml || '';
 
@@ -388,6 +387,7 @@ const globalData = {
                     card.style.animation = `fadeInUp 0.4s ease forwards ${index * 0.05}s`;
                     modalList.appendChild(card);
                 });
+
             } 
             else if (type === 'vanhoa') {
                 const data = ASSETS.diemVanHoa.find(item => item.id === itemId);
@@ -436,6 +436,7 @@ const globalData = {
                 modalContent.classList.remove('scale-90', 'opacity-0');
                 modalContent.classList.add('scale-100', 'opacity-100');
             }, 10);
+
             history.pushState({ modalOpen: true }, '');
         };
 
@@ -446,6 +447,7 @@ const globalData = {
                 modal.classList.add('hidden');
                 modalList.innerHTML = ''; 
             }, 300);
+
             if (isFromPopState !== true && history.state && history.state.modalOpen) {
                 history.back();
             }
@@ -465,184 +467,176 @@ const globalData = {
                 window.closeModal(true); 
             }
         });
-        
     </script>
 
-    <div id="chatbot-container" class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: #005bb5; }
+    </style>
+
+    <button id="chat-toggle" class="fixed bottom-6 right-6 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-50 border border-gray-100">
+        <img src="/assets/logodoan.png" class="w-10 h-10 object-contain" alt="Chat Logo" />
+    </button>
+
+    <div id="chat-window" class="fixed bottom-6 right-6 w-[360px] max-w-[90vw] h-[550px] max-h-[80vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 hidden transition-all duration-300">
         
-        <div id="chat-window" class="hidden w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 mb-4 overflow-hidden flex-col h-[500px] max-h-[80vh] transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
-            <div class="bg-brand-blue p-4 flex items-center justify-between text-white">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <img src="/assets/logodoan.png" alt="Logo" class="w-8 h-8 object-contain drop-shadow-md">
-                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-brand-blue"></div>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-sm">Trợ lý ảo Đoàn Phường</h4>
-                        <p class="text-[10px] text-blue-200">Đang hoạt động</p>
-                    </div>
+        <div class="bg-[#005bb5] text-white p-3 flex items-center justify-between shadow-sm z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1 shadow-inner">
+                    <img src="/assets/logodoan.png" class="w-full h-full object-contain" />
                 </div>
-                <button onclick="toggleChat()" class="text-white hover:text-red-200 transition-colors">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            
-            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-3 text-sm">
-                <div class="flex items-start gap-2">
-                    <img src="/assets/logodoan.png" class="w-6 h-6 object-contain flex-shrink-0 mt-1">
-                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700">
-                        Chào bạn! Mình là trợ lý AI của Đoàn Phường Tân Lập. Bạn cần hỗ trợ thông tin gì về các thủ tục, hoạt động hay địa điểm ạ?
+                <div class="flex flex-col">
+                    <span class="font-bold text-[15px] leading-tight">Trợ lý AI Tân Lập</span>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                        <span class="text-xs opacity-90">Đang trực tuyến</span>
                     </div>
                 </div>
             </div>
+            <button id="close-chat" class="text-white hover:text-gray-200 p-2 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
 
-            <div class="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
-                <input type="text" id="chat-input" placeholder="Nhập câu hỏi của bạn..." class="flex-1 bg-slate-100 text-slate-800 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-sm" onkeypress="handleEnter(event)">
-                <button onclick="sendMessage()" id="send-btn" class="w-9 h-9 rounded-full bg-brand-blue text-white flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0">
-                    <i class="fa-solid fa-paper-plane text-xs -ml-0.5"></i>
-                </button>
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#f8f9fa] flex flex-col gap-4 text-sm custom-scrollbar pb-6">
+            <div class="flex items-start gap-2">
+                <div class="w-7 h-7 bg-white rounded-full p-0.5 shadow-sm flex-shrink-0 mt-1 border border-gray-100">
+                    <img src="/assets/logodoan.png" class="w-full h-full object-contain">
+                </div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed max-w-[85%]">
+                    Xin chào! Tôi có thể giúp gì được cho bạn trên trang Công trình địa phương số này?
+                </div>
             </div>
         </div>
 
-        <div id="chat-greeting" class="absolute bottom-20 right-0 w-64 sm:w-[280px] bg-white p-3 sm:p-4 rounded-2xl rounded-br-none shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 transform translate-y-6 opacity-0 transition-all duration-700 pointer-events-none flex items-start gap-3 z-40">
-            <img src="/assets/logodoan.png" class="w-8 h-8 object-contain shrink-0 mt-0.5">
-            <p class="text-[13px] sm:text-sm text-slate-700 leading-relaxed font-medium">Chào bạn! Mình là Trợ lý ảo của Đoàn Phường. Mình có thể giúp gì cho bạn hôm nay?</p>
+        <div class="p-3 bg-white border-t border-gray-100 z-10">
+            <div class="relative flex items-center">
+                <input type="text" id="chat-input" placeholder="Nhập câu hỏi của bạn..." 
+                    class="w-full pl-5 pr-14 py-3 bg-[#f3f4f6] border border-transparent rounded-full focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 text-[14px] transition-all">
+                <button id="send-btn" class="absolute right-1.5 w-[36px] h-[36px] bg-[#005bb5] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-sm">
+                    <i class="fa-solid fa-paper-plane text-[13px] ml-[-2px]"></i>
+                </button>
+            </div>
         </div>
-
-        <button onclick="toggleChat()" id="chat-toggle-btn" class="relative w-16 h-16 hover:scale-110 transition-transform duration-300 drop-shadow-xl focus:outline-none flex items-center justify-center bg-transparent mt-2">
-            <img src="/assets/logodoan.png" alt="Chat" class="w-full h-full object-contain relative z-10">
-            
-            <span class="absolute top-0 right-0 z-20 flex h-4 w-4">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-4 w-4 bg-green-500 border-2 border-white"></span>
-            </span>
-        </button>
     </div>
 
     <script is:inline>
-        const chatWindow = document.getElementById('chat-window');
-        const chatMessages = document.getElementById('chat-messages');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const chatGreeting = document.getElementById('chat-greeting');
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatToggle = document.getElementById('chat-toggle');
+            const chatWindow = document.getElementById('chat-window');
+            const closeChat = document.getElementById('close-chat');
+            const chatInput = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+            const chatMessages = document.getElementById('chat-messages');
 
-        // ==========================================
-        // XỬ LÝ HIỆU ỨNG LỜI CHÀO KHI MỞ TRANG WEB
-        // ==========================================
-        document.addEventListener("DOMContentLoaded", () => {
-            // Hiện bong bóng lời chào sau 1.5 giây
-            setTimeout(() => {
-                chatGreeting.classList.remove('translate-y-6', 'opacity-0');
-                chatGreeting.classList.add('translate-y-0', 'opacity-100');
-            }, 1500);
-
-            // Tự động ẩn đi sau 5 giây (Tổng cộng là 6.5s)
-            setTimeout(() => {
-                chatGreeting.classList.remove('translate-y-0', 'opacity-100');
-                chatGreeting.classList.add('translate-y-6', 'opacity-0');
-            }, 6500);
-        });
-
-        // ==========================================
-        // XỬ LÝ MỞ/ĐÓNG KHUNG CHAT
-        // ==========================================
-        function toggleChat() {
-            // Nếu bong bóng lời chào đang hiện thì ép nó ẩn đi luôn
-            if (chatGreeting) {
-                chatGreeting.classList.remove('translate-y-0', 'opacity-100');
-                chatGreeting.classList.add('translate-y-6', 'opacity-0');
-            }
-
-            if (chatWindow.classList.contains('hidden')) {
+            // MỞ CHAT: Hiện khung chat, Ẩn logo tròn
+            chatToggle.addEventListener('click', () => {
                 chatWindow.classList.remove('hidden');
-                setTimeout(() => {
-                    chatWindow.classList.remove('scale-95', 'opacity-0');
-                    chatWindow.classList.add('scale-100', 'opacity-100');
-                }, 10);
-                setTimeout(() => chatInput.focus(), 300); // Tự động trỏ chuột vào ô nhập liệu
-            } else {
-                chatWindow.classList.remove('scale-100', 'opacity-100');
-                chatWindow.classList.add('scale-95', 'opacity-0');
-                setTimeout(() => { chatWindow.classList.add('hidden'); }, 300);
-            }
-        }
+                chatToggle.classList.add('hidden');
+            });
 
-        // ==========================================
-        // XỬ LÝ NHẬN GỬI TIN NHẮN
-        // ==========================================
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendMessage();
-        }
+            // ĐÓNG CHAT: Ẩn khung chat, Hiện lại logo tròn
+            closeChat.addEventListener('click', () => {
+                chatWindow.classList.add('hidden');
+                chatToggle.classList.remove('hidden');
+            });
 
-       async function sendMessage() {
-            const message = chatInput.value.trim();
-            if (!message) return;
+            // Bắt sự kiện nhấn phím Enter
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
 
-            // --- ĐOẠN MỚI THÊM: GOM DATA TỪ GIAO DIỆN WEB CHO AI ĐỌC ---
-            let webLocations = "";
-            if (typeof ASSETS !== 'undefined') {
-                const allPlaces = [
-                    ...(ASSETS.coQuanNhaNuoc || []),
-                    ...(ASSETS.diemVanHoa || []),
-                    ...(ASSETS.diemHoiTruong || [])
-                ];
-                allPlaces.forEach(p => {
-                    if (p.title || p.badge) {
-                        webLocations += `- Cơ sở: ${p.title || p.badge} | Địa chỉ: ${p.address || 'Đang cập nhật'} | Link bản đồ: ${p.mapLink || ''}\n`;
-                    }
-                });
-            }
-            // -------------------------------------------------------------
+            // Bắt sự kiện bấm nút Gửi
+            sendBtn.addEventListener('click', sendMessage);
 
-            // 1. Hiển thị tin nhắn người dùng
-            chatInput.value = '';
-            chatInput.disabled = true;
-            sendBtn.disabled = true;
-            
-            chatMessages.innerHTML += `
-                <div class="flex items-start gap-2 justify-end">
-                    <div class="bg-brand-blue text-white p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%]">${message}</div>
-                </div>`;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // HÀM XỬ LÝ GỬI TIN NHẮN
+            async function sendMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
 
-            // 2. Hiện trạng thái AI đang gõ
-            const typingId = 'typing-' + Date.now();
-            chatMessages.innerHTML += `
-                <div id="${typingId}" class="flex items-start gap-2">
-                    <img src="/assets/logodoan.png" class="w-6 h-6 object-contain flex-shrink-0 mt-1">
-                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-500 flex gap-1">
-                        <span class="animate-bounce">.</span><span class="animate-bounce" style="animation-delay: 0.1s">.</span><span class="animate-bounce" style="animation-delay: 0.2s">.</span>
-                    </div>
-                </div>`;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+                // 1. Gom dữ liệu địa điểm từ Web để gửi cho AI 
+                let webLocations = "";
+                if (typeof ASSETS !== 'undefined') {
+                    const allPlaces = [
+                        ...(ASSETS.coQuanNhaNuoc || []),
+                        ...(ASSETS.diemVanHoa || []),
+                        ...(ASSETS.diemHoiTruong || [])
+                    ];
+                    allPlaces.forEach(p => {
+                        if (p.title || p.badge) {
+                            webLocations += `- Cơ sở: ${p.title || p.badge} | Địa chỉ: ${p.address || 'Đang cập nhật'} | Link bản đồ: ${p.mapLink || ''}\n`;
+                        }
+                    });
+                }
 
-            // 3. Gửi lên Cloudflare API (Kèm theo dữ liệu webLocations)
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message, webData: webLocations }) // <-- Truyền thêm data web ở đây
-                });
-                const data = await response.json();
+                // 2. Khóa ô nhập liệu và in câu hỏi của người dùng ra màn hình
+                chatInput.value = '';
+                chatInput.disabled = true;
+                sendBtn.disabled = true;
                 
-                // 4. Hiển thị câu trả lời AI
-                document.getElementById(typingId).remove();
                 chatMessages.innerHTML += `
-                    <div class="flex items-start gap-2">
-                        <img src="/assets/logodoan.png" class="w-6 h-6 object-contain flex-shrink-0 mt-1">
-                        <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-[85%] whitespace-pre-wrap leading-relaxed">${data.reply}</div>
+                    <div class="flex items-start gap-2 justify-end">
+                        <div class="bg-[#005bb5] text-white p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%]">${message}</div>
                     </div>`;
-            } catch (error) {
-                document.getElementById(typingId).remove();
-                chatMessages.innerHTML += `
-                    <div class="flex items-start gap-2 text-red-500 text-xs text-center justify-center mt-2">Lỗi kết nối. Vui lòng thử lại.</div>`;
-            }
+                chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            chatInput.disabled = false;
-            sendBtn.disabled = false;
-            chatInput.focus();
-        }
+                // 3. Hiện trạng thái AI đang gõ (...)
+                const typingId = 'typing-' + Date.now();
+                chatMessages.innerHTML += `
+                    <div id="${typingId}" class="flex items-start gap-2">
+                        <div class="w-7 h-7 bg-white rounded-full p-0.5 shadow-sm flex-shrink-0 mt-1 border border-gray-100">
+                            <img src="/assets/logodoan.png" class="w-full h-full object-contain">
+                        </div>
+                        <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-500 flex gap-1">
+                            <span class="animate-bounce">.</span><span class="animate-bounce" style="animation-delay: 0.1s">.</span><span class="animate-bounce" style="animation-delay: 0.2s">.</span>
+                        </div>
+                    </div>`;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // 4. Giao tiếp với Cloudflare API
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: message, webData: webLocations })
+                    });
+                    const data = await response.json();
+                    
+                    // Xóa trạng thái đang gõ
+                    document.getElementById(typingId).remove();
+                    
+                    // In câu trả lời của AI
+                    chatMessages.innerHTML += `
+                        <div class="flex items-start gap-2">
+                            <div class="w-7 h-7 bg-white rounded-full p-0.5 shadow-sm flex-shrink-0 mt-1 border border-gray-100">
+                                <img src="/assets/logodoan.png" class="w-full h-full object-contain">
+                            </div>
+                            <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-[85%] whitespace-pre-wrap leading-relaxed">${data.reply}</div>
+                        </div>`;
+                        
+                } catch (error) {
+                    // 5. In giao diện LỖI mạng
+                    document.getElementById(typingId).remove();
+                    chatMessages.innerHTML += `
+                        <div class="flex items-start gap-2">
+                            <div class="w-7 h-7 bg-white rounded-full p-0.5 shadow-sm flex-shrink-0 mt-1 border border-gray-100">
+                                <img src="/assets/logodoan.png" class="w-full h-full object-contain">
+                            </div>
+                            <div class="bg-[#fff1f2] p-3 rounded-2xl rounded-tl-none border border-[#ffe4e6] text-[#e11d48] leading-relaxed max-w-[85%] font-medium">
+                                Mất kết nối máy chủ. Vui lòng kiểm tra lại mạng!
+                            </div>
+                        </div>`;
+                }
+
+                // Mở khóa ô nhập liệu và cuộn xuống đáy
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        });
     </script>
 </body>
 </html>
