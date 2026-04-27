@@ -183,7 +183,6 @@ const globalData = {
             diemVanHoa: vanHoaData,
             diemHoiTruong: tdpData
         };
-
         const departmentData = {};
         ASSETS.coQuanNhaNuoc.forEach(item => {
             departmentData[item.id] = { 
@@ -194,14 +193,12 @@ const globalData = {
                 roomLabel: item.roomLabel || "Tầng / Phòng"
             };
         });
-
         const themeColors = {
             blue: { text: 'text-blue-600', bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
             red: { text: 'text-red-600', bg: 'bg-red-50', badge: 'bg-red-100 text-red-700' },
             green: { text: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
             yellow: { text: 'text-amber-600', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700' }
         };
-
         document.addEventListener("DOMContentLoaded", () => {
             // Mobile Menu
             const mobileBtn = document.getElementById('mobile-menu-btn');
@@ -223,7 +220,6 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars'); 
                 }
             });
-
             mobileLinks.forEach(link => {
                 link.addEventListener('click', () => {
                     mobileMenu.classList.add('hidden');
@@ -232,12 +228,11 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars');
                 });
             });
-
             document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
             document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
             document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
             document.getElementById('app-footer').innerText = ASSETS.global.footerText;
-
+            
             // Render Mục 1: Cơ quan nhà nước
             const nhaNuocContainer = document.getElementById('nhanuoc-list');
             ASSETS.coQuanNhaNuoc.forEach((item, index) => {
@@ -286,7 +281,6 @@ const globalData = {
                         </div>
                     </div>`;
             });
-
             // Render Mục 3: Hội trường
             const hoiTruongContainer = document.getElementById('hoitruong-list');
             ASSETS.diemHoiTruong.forEach((item, index) => {
@@ -311,7 +305,6 @@ const globalData = {
                 strings: ASSETS.global.subtitles,
                 typeSpeed: 60, backSpeed: 30, backDelay: 2500, loop: true
             });
-
             AOS.init({ duration: 800, once: true, offset: 50 });
         });
 
@@ -321,10 +314,8 @@ const globalData = {
         const modalTitle = document.getElementById('modalTitle');
         const modalSubtitle = document.getElementById('modalSubtitle');
         const modalList = document.getElementById('modalList');
-
         window.openModal = function(itemId, type) {
             modalList.innerHTML = '';
-
             if (type === 'nhanuoc') {
                 const data = departmentData[itemId];
                 if (!data) return;
@@ -350,7 +341,6 @@ const globalData = {
                     let nameHtml = dept.personName 
                         ? `<span class="${nColor} ${nWeight} ${nStyle} ${nSize} uppercase block mb-1">${dept.personName}</span>` 
                         : '';
-
                     let rolesHtml = dept.rolesHtml || '';
 
                     card.innerHTML = `
@@ -380,7 +370,6 @@ const globalData = {
                     card.style.animation = `fadeInUp 0.4s ease forwards ${index * 0.05}s`;
                     modalList.appendChild(card);
                 });
-
             } 
             else if (type === 'vanhoa') {
                 const data = ASSETS.diemVanHoa.find(item => item.id === itemId);
@@ -401,7 +390,6 @@ const globalData = {
                                 </div>`).join('')}
                         </div>
                     </div>` : '';
-
                 const card = document.createElement('div');
                 card.className = "animate-[fadeInUp_0.4s_ease_forwards]";
                 card.innerHTML = `
@@ -439,7 +427,6 @@ const globalData = {
                 modal.classList.add('hidden');
                 modalList.innerHTML = ''; 
             }, 300);
-
             if (isFromPopState !== true && history.state && history.state.modalOpen) {
                 history.back();
             }
@@ -453,7 +440,6 @@ const globalData = {
                 }
             }
         });
-
         window.addEventListener('popstate', (event) => {
             if (!modal.classList.contains('hidden')) {
                 window.closeModal(true); 
@@ -462,14 +448,24 @@ const globalData = {
     </script>
 
     <style>
+        /* Hiệu ứng đổ bóng nhẹ cho Logo Đoàn (Drop Shadow) */
+        .drop-shadow-logo {
+            filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.2));
+            transition: filter 0.3s ease;
+        }
+        #chat-toggle:hover .drop-shadow-logo {
+            filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.3));
+        }
+
+        /* Tùy chỉnh thanh cuộn Chatbox */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
         .custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: #005bb5; }
     </style>
 
-    <button id="chat-toggle" class="fixed bottom-6 right-6 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-50 border border-gray-100">
-        <img src="/assets/logodoan.png" class="w-10 h-10 object-contain" alt="Chat Logo" />
+    <button id="chat-toggle" class="fixed bottom-6 right-6 flex items-center justify-center hover:scale-110 transition-transform duration-300 z-50 focus:outline-none">
+        <img src="/assets/logodoan.png" class="w-16 h-16 object-contain drop-shadow-logo" alt="Chat Logo Đoàn Phường" />
     </button>
 
     <div id="chat-window" class="fixed bottom-6 right-6 w-[360px] max-w-[90vw] h-[550px] max-h-[80vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 hidden transition-all duration-300">
@@ -523,13 +519,14 @@ const globalData = {
             const sendBtn = document.getElementById('send-btn');
             const chatMessages = document.getElementById('chat-messages');
 
-            // Ẩn logo khi chat mở
+            // Biến lưu trữ Ngữ cảnh giao tiếp (Trí nhớ)
+            let chatHistory = [];
+
+            // Ẩn/Hiện chat
             chatToggle.addEventListener('click', () => {
                 chatWindow.classList.remove('hidden');
                 chatToggle.classList.add('hidden');
             });
-
-            // Hiện logo khi chat đóng
             closeChat.addEventListener('click', () => {
                 chatWindow.classList.add('hidden');
                 chatToggle.classList.remove('hidden');
@@ -538,26 +535,40 @@ const globalData = {
             chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
             });
-
             sendBtn.addEventListener('click', sendMessage);
 
             async function sendMessage() {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // Thu thập địa điểm từ web để cấp cho AI
-                let webLocations = "";
+                // Thu thập chi tiết thông tin nhân sự, địa điểm từ Web để cấp cho AI
+                let webContext = "DỮ LIỆU CHI TIẾT TỪ TRANG WEB:\\n";
                 if (typeof ASSETS !== 'undefined') {
-                    const allPlaces = [
-                        ...(ASSETS.coQuanNhaNuoc || []),
-                        ...(ASSETS.diemVanHoa || []),
-                        ...(ASSETS.diemHoiTruong || [])
-                    ];
-                    allPlaces.forEach(p => {
-                        if (p.title || p.badge) {
-                            webLocations += `- Cơ sở: ${p.title || p.badge} | Địa chỉ: ${p.address || 'Đang cập nhật'} | Link bản đồ: ${p.mapLink || ''}\n`;
-                        }
-                    });
+                    if (ASSETS.coQuanNhaNuoc) {
+                        webContext += "\\n--- CƠ QUAN NHÀ NƯỚC, ĐẢNG, ĐOÀN THỂ ---\\n";
+                        ASSETS.coQuanNhaNuoc.forEach(cq => {
+                            webContext += `* Cơ quan/Tổ chức: ${cq.title}\\n`;
+                            if(cq.address) webContext += `  - Địa chỉ: ${cq.address}\\n`;
+                            if(cq.description) webContext += `  - Giới thiệu: ${cq.description}\\n`;
+                            if (cq.departments && cq.departments.length > 0) {
+                                webContext += `  - Cán bộ/phòng ban:\\n`;
+                                cq.departments.forEach(dept => {
+                                    webContext += `    + ${dept.name}`;
+                                    if (dept.personName) webContext += `: ${dept.personName}`;
+                                    let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ' ').trim();
+                                    if (cleanRoles) webContext += ` (${cleanRoles})`;
+                                    if (dept.address) webContext += ` - Vị trí: ${dept.address}`;
+                                    webContext += `\\n`;
+                                });
+                            }
+                        });
+                    }
+                    if (ASSETS.diemVanHoa) {
+                        webContext += "\\n--- ĐIỂM VĂN HÓA LỊCH SỬ ---\\n";
+                        ASSETS.diemVanHoa.forEach(vh => {
+                            webContext += `* Địa điểm: ${vh.title} | Địa chỉ: ${vh.address || ''}\\n`;
+                        });
+                    }
                 }
 
                 chatInput.value = '';
@@ -583,10 +594,15 @@ const globalData = {
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
                 try {
+                    // Gửi lên Cloudflare API: Bao gồm câu hỏi, Dữ liệu Web và TRÍ NHỚ (History)
                     const response = await fetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message, webData: webLocations })
+                        body: JSON.stringify({ 
+                            message: message, 
+                            webData: webContext,
+                            history: chatHistory 
+                        })
                     });
                     const data = await response.json();
                     
@@ -599,6 +615,13 @@ const globalData = {
                             </div>
                             <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-[85%] whitespace-pre-wrap leading-relaxed">${data.reply}</div>
                         </div>`;
+
+                    // Lưu câu hỏi và câu trả lời vào trí nhớ (chỉ giữ 6 câu gần nhất để tối ưu)
+                    chatHistory.push({ role: 'user', content: message });
+                    chatHistory.push({ role: 'assistant', content: data.reply });
+                    if (chatHistory.length > 6) {
+                        chatHistory = chatHistory.slice(chatHistory.length - 6);
+                    }
                         
                 } catch (error) {
                     document.getElementById(typingId).remove();
