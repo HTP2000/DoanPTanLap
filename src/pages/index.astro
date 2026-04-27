@@ -2,9 +2,6 @@
 import '../styles/global.css';
 import { sanityClient } from "sanity:client";
 
-// ==========================================================
-// 1. KÉO TOÀN BỘ DỮ LIỆU TỪ SANITY VỀ ASTRO
-// ==========================================================
 const { rawCoQuanData, vanHoaData, tdpData } = await sanityClient.fetch(`{
   "rawCoQuanData": *[_type == "coQuanNhaNuoc"] | order(order asc) {
     "id": _id, title, theme, unitLabel, roomLabel, description, address, mapLink,
@@ -25,7 +22,6 @@ const { rawCoQuanData, vanHoaData, tdpData } = await sanityClient.fetch(`{
   }
 }`);
 
-// Xử lý dữ liệu Portable Text của Sanity thành HTML
 const coQuanData = rawCoQuanData.map((coquan: any) => {
     return {
         ...coquan,
@@ -48,9 +44,6 @@ const coQuanData = rawCoQuanData.map((coquan: any) => {
     }
 });
 
-// ==========================================================
-// 2. DỮ LIỆU TĨNH GLOBAL
-// ==========================================================
 const globalData = {
     logo: '<img src="/assets/logodoan.png" alt="Logo" class="w-full h-full object-contain drop-shadow-md">', 
     titleLine1: "ĐOÀN TNCS HỒ CHÍ MINH PHƯỜNG TÂN LẬP",
@@ -606,12 +599,15 @@ const globalData = {
                     document.getElementById(typingId).remove();
 
                     // ==========================================
-                    // XỬ LÝ TEXT: TỰ ĐỘNG TẠO NÚT XANH CHỈ ĐƯỜNG
+                    // XỬ LÝ TEXT: IN ĐẬM VÀ TỰ ĐỘNG TẠO NÚT XANH
                     // ==========================================
                     let replyHtml = data.reply;
                     
                     // Dọn dẹp lỗi ảo giác dấu ngoặc vuông nếu AI lỡ sinh ra
                     replyHtml = replyHtml.replace(/\[.*?\]/g, ""); 
+
+                    // CHUYỂN ĐỔI CHỮ IN ĐẬM: Đổi các ký tự Markdown ** của AI thành thẻ <b> để in đậm trên Web
+                    replyHtml = replyHtml.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
                     
                     // Tự động tìm và tách link để nhét vào Nút Xanh
                     const urlMatch = replyHtml.match(/(https?:\/\/[^\s)]+)/);

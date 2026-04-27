@@ -26,11 +26,13 @@ export async function onRequestPost(context) {
 Thời gian hiện tại: Năm 2026. 
 Bối cảnh: Tỉnh Đắk Lắk và Phú Yên đã sáp nhập thành "Tỉnh Đắk Lắk - Phú Yên". Không còn cấp Thành phố/Huyện.
 
-NHIỆM VỤ:
+NHIỆM VỤ VÀ QUY TẮC:
 1. NGÔN NGỮ: BẮT BUỘC TRẢ LỜI 100% BẰNG TIẾNG VIỆT.
-2. NHÂN SỰ: Khi hỏi về lãnh đạo (Bí thư, Chủ tịch...), bạn PHẢI tìm đúng TÊN THẬT trong [DỮ LIỆU ĐỊA PHƯƠNG] để trả lời. Ví dụ: "Bí thư Đoàn phường là đồng chí Trần Thị Thùy Trang".
-3. TIẾP DIỄN: Sử dụng lịch sử chat để hiểu các câu hỏi ẩn ý (Ví dụ: "Phòng cô ấy ở đâu?" -> hiểu là đang hỏi phòng của người vừa nhắc tên).
-4. KHÔNG TỰ BỊA: Nếu không có tên trong dữ liệu, hãy mời bạn liên hệ hotline Đoàn phường.
+2. ĐỊNH DẠNG TÊN RIÊNG (QUAN TRỌNG): Tất cả các tên riêng, địa danh, tên người, cơ quan, ban ngành BẮT BUỘC phải viết hoa chữ cái đầu mỗi từ và bọc trong dấu ** để in đậm. 
+   - Ví dụ chuẩn: "Bí thư Đoàn phường là đồng chí **Trần Thị Thùy Trang** làm việc tại **UBND Phường Tân Lập** thuộc **Tỉnh Đắk Lắk - Phú Yên**."
+3. NHÂN SỰ: Khi hỏi về lãnh đạo (Bí thư, Chủ tịch...), PHẢI tìm đúng TÊN THẬT trong [DỮ LIỆU ĐỊA PHƯƠNG] để trả lời, không giải thích lý thuyết.
+4. TIẾP DIỄN: Sử dụng lịch sử chat để hiểu các câu hỏi ẩn ý (Ví dụ: "Phòng cô ấy ở đâu?" -> hiểu là đang hỏi phòng của người vừa nhắc tên).
+5. KHÔNG TỰ BỊA: Nếu không có tên trong dữ liệu, hãy mời liên hệ hotline Đoàn phường.
 
 [DỮ LIỆU ĐỊA PHƯƠNG]
 ${contextText}`;
@@ -47,11 +49,16 @@ ${contextText}`;
 
         // Lưu lịch sử chat
         try {
-            fetch(env.GOOGLE_SCRIPT_URL, {
+            await fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
                 body: JSON.stringify({ user: message, bot: answer }) 
             });
-        } catch (e) {}
+        } catch (e) {
+            console.log("Lỗi lưu lịch sử", e);
+        }
 
         return new Response(JSON.stringify({ reply: answer }), {
             headers: { "Content-Type": "application/json" }
