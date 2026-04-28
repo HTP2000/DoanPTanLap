@@ -48,6 +48,9 @@ const coQuanData = rawCoQuanData.map((coquan: any) => {
     }
 });
 
+// ==========================================================
+// 2. DỮ LIỆU TĨNH GLOBAL
+// ==========================================================
 const globalData = {
     logo: '<img src="/assets/logodoan.png" alt="Logo" class="w-full h-full object-contain drop-shadow-md">', 
     titleLine1: "ĐOÀN TNCS HỒ CHÍ MINH PHƯỜNG TÂN LẬP",
@@ -536,7 +539,7 @@ const globalData = {
                 if (!message) return;
 
                 // ==========================================
-                // ĐỊNH DẠNG CÂU VĂN LIỀN MẠCH CHỐNG ẢO GIÁC AI
+                // ĐỊNH DẠNG CÂU VĂN CHẶT CHẼ, GỘP CHUNG TÊN VÀ CHỨC VỤ
                 // ==========================================
                 let webContext = "DỮ LIỆU TỪ TRANG WEB:\\n";
                 if (typeof ASSETS !== 'undefined') {
@@ -545,10 +548,12 @@ const globalData = {
                         ASSETS.coQuanNhaNuoc.forEach(cq => {
                             if (cq.departments && cq.departments.length > 0) {
                                 cq.departments.forEach(dept => {
-                                    let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ' ').replace(/\\s+/g, ' ').trim();
+                                    // Loại bỏ thẻ HTML và khoảng trắng thừa
+                                    let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
                                     let person = dept.personName ? dept.personName : "Chưa cập nhật";
-                                    // Tạo thành một câu văn hoàn chỉnh ép AI phải đọc đúng
-                                    webContext += `- Đồng chí ${person} giữ chức vụ ${cleanRoles} làm việc tại cơ quan ${cq.title}. Nơi làm việc tại: ${dept.address || cq.address || 'Chưa rõ'}.\\n`;
+                                    
+                                    // Tạo thành một câu văn hoàn chỉnh rõ ràng nhất để AI không thể đọc sai
+                                    webContext += `- Tên cán bộ: ${person}. Chức vụ/Phòng ban: ${dept.name} ${cleanRoles}. Trực thuộc cơ quan: ${cq.title}. Nơi làm việc: ${dept.address || cq.address || 'Chưa rõ'}.\\n`;
                                 });
                             }
                         });
