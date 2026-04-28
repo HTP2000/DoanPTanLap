@@ -6,7 +6,7 @@ export async function onRequestPost(context) {
     const history = body.history || []; 
 
     try {
-        let contextText = "--- DỮ LIỆU TỪ TRANG WEB CỦA PHƯỜNG ---\n" + webData + "\n--- DỮ LIỆU TỪ GOOGLE SHEET ---\n";
+        let contextText = "THÔNG TIN CHI TIẾT NHÂN SỰ VÀ ĐỊA ĐIỂM TRÊN WEB:\n" + webData + "\nKIẾN THỨC THỦ TỤC (Excel):\n";
         
         try {
             const kbResponse = await fetch(env.GOOGLE_SCRIPT_URL);
@@ -14,32 +14,26 @@ export async function onRequestPost(context) {
                 const kbData = await kbResponse.json();
                 if (Array.isArray(kbData) && kbData.length > 0) {
                     kbData.forEach(item => {
-                        contextText += `- Câu hỏi/Vấn đề: ${item.question} -> Chỉ dẫn: ${item.answer}\n`;
+                        contextText += `- Vấn đề: ${item.question} -> Chỉ dẫn: ${item.answer}\n`;
                     });
                 }
             }
         } catch (e) {
-            console.log("Lỗi tải Excel");
+            console.log("Không kéo được dữ liệu Excel.");
         }
 
-        // DÙNG THẺ <data> ĐỂ KHOANH VÙNG KIẾN THỨC, CẤM AI THOÁT RA NGOÀI
-        const systemPrompt = `Bạn là Trợ lý AI của Đoàn Phường Tân Lập (Năm 2026, Tỉnh Đắk Lắk - Phú Yên).
-NHIỆM VỤ TỐI THƯỢNG: TRẢ LỜI CÂU HỎI BẰNG TIẾNG VIỆT, CHỈ DỰA VÀO VĂN BẢN TRONG THẺ <data> DƯỚI ĐÂY.
+        const systemPrompt = `Bạn là Trợ lý AI thân thiện của Đoàn Phường Tân Lập. Xưng hô là "Mình" và gọi người dùng là "Bạn".
+Thời gian hiện tại: Năm 2026. 
+Bối cảnh: Tỉnh Đắk Lắk và Phú Yên đã sáp nhập thành "Tỉnh Đắk Lắk - Phú Yên". Không còn cấp Thành phố/Huyện.
 
-<data>
-${contextText}
-</data>
+NHIỆM VỤ:
+1. NGÔN NGỮ: BẮT BUỘC TRẢ LỜI 100% BẰNG TIẾNG VIỆT.
+2. NHÂN SỰ: Khi hỏi về lãnh đạo (Bí thư, Chủ tịch...), bạn PHẢI tìm đúng TÊN THẬT trong [DỮ LIỆU ĐỊA PHƯƠNG] để trả lời. Ví dụ: "Bí thư Đoàn phường là đồng chí Trần Thị Thùy Trang".
+3. TIẾP DIỄN: Sử dụng lịch sử chat để hiểu các câu hỏi ẩn ý (Ví dụ: "Phòng cô ấy ở đâu?" -> hiểu là đang hỏi phòng của người vừa nhắc tên).
+4. KHÔNG TỰ BỊA: Nếu không có tên trong dữ liệu, hãy mời bạn liên hệ hotline Đoàn phường.
 
-QUY TẮC KỶ LUẬT THÉP CẦN TUÂN THỦ:
-1. TÌM TÊN NGƯỜI CHÍNH XÁC: Khi người dùng hỏi tên Bí thư, Chủ tịch... bạn BẮT BUỘC phải đọc kỹ trong thẻ <data>.
-Nếu trong <data> ghi:
-"- Họ tên: Trần Thị Thùy Trang"
-"- Chức vụ: ... Bí thư Đoàn Phường ..."
--> Thì bạn PHẢI trả lời là: "Bí thư Đoàn Phường là đồng chí **Trần Thị Thùy Trang**".
-2. CẤM BỊA ĐẶT: TUYỆT ĐỐI KHÔNG sử dụng kiến thức bên ngoài mạng internet để tạo ra các tên như Nguyễn Thị Thanh Hằng, Thanh Tâm... 
-3. TỪ CHỐI NẾU KHÔNG BIẾT: Nếu trong thẻ <data> không có thông tin, bạn CHỈ ĐƯỢC trả lời nguyên văn: "Dạ, hiện tại hệ thống chưa có thông tin về vấn đề này. Bạn vui lòng liên hệ hotline của Đoàn Phường Tân Lập để được hỗ trợ nhé." (Tuyệt đối không giải thích thêm).
-4. ĐỊNH DẠNG: Bắt buộc in đậm tên người, tên cơ quan trong dấu ** (VD: **Trần Thị Thùy Trang**). KHÔNG dùng từ "Mình!" ở đầu câu.
-5. KÈM LINK BẢN ĐỒ: Nếu có link trong <data>, chèn HTML này ở cuối: <br><br><a href="ĐIỀN_LINK" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-sm hover:bg-blue-700"><i class="fa-solid fa-map-location-dot mr-2"></i> Chỉ đường ngay</a>`;
+[DỮ LIỆU ĐỊA PHƯƠNG]
+${contextText}`;
 
         let aiMessages = [{ role: "system", content: systemPrompt }];
         history.forEach(msg => aiMessages.push({ role: msg.role, content: msg.content }));
@@ -51,10 +45,10 @@ Nếu trong <data> ghi:
 
         const answer = aiResponse.response;
 
+        // Lưu lịch sử chat
         try {
-            await fetch(env.GOOGLE_SCRIPT_URL, {
+            fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user: message, bot: answer }) 
             });
         } catch (e) {}
