@@ -2,6 +2,9 @@
 import '../styles/global.css';
 import { sanityClient } from "sanity:client";
 
+// ==========================================================
+// 1. KÉO TOÀN BỘ DỮ LIỆU TỪ SANITY VỀ ASTRO
+// ==========================================================
 const { rawCoQuanData, vanHoaData, tdpData } = await sanityClient.fetch(`{
   "rawCoQuanData": *[_type == "coQuanNhaNuoc"] | order(order asc) {
     "id": _id, title, theme, unitLabel, roomLabel, description, address, mapLink,
@@ -22,6 +25,7 @@ const { rawCoQuanData, vanHoaData, tdpData } = await sanityClient.fetch(`{
   }
 }`);
 
+// Xử lý dữ liệu Portable Text của Sanity thành HTML
 const coQuanData = rawCoQuanData.map((coquan: any) => {
     return {
         ...coquan,
@@ -44,6 +48,9 @@ const coQuanData = rawCoQuanData.map((coquan: any) => {
     }
 });
 
+// ==========================================================
+// 2. DỮ LIỆU TĨNH GLOBAL
+// ==========================================================
 const globalData = {
     logo: '<img src="/assets/logodoan.png" alt="Logo" class="w-full h-full object-contain drop-shadow-md">', 
     titleLine1: "ĐOÀN TNCS HỒ CHÍ MINH PHƯỜNG TÂN LẬP",
@@ -531,24 +538,25 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // Thu thập chi tiết thông tin nhân sự, địa điểm từ Web để cấp cho AI
-                let webContext = "DỮ LIỆU CHI TIẾT TỪ TRANG WEB:\\n";
+                // ==========================================
+                // ĐỊNH DẠNG LẠI DỮ LIỆU RÕ RÀNG ĐỂ AI KHÔNG THỂ ĐỌC SAI
+                // ==========================================
+                let webContext = "DỮ LIỆU TỪ TRANG WEB CỦA PHƯỜNG:\\n";
                 if (typeof ASSETS !== 'undefined') {
                     if (ASSETS.coQuanNhaNuoc) {
-                        webContext += "\\n--- CƠ QUAN NHÀ NƯỚC, ĐẢNG, ĐOÀN THỂ ---\\n";
+                        webContext += "\\n--- CƠ QUAN & NHÂN SỰ LÃNH ĐẠO ---\\n";
                         ASSETS.coQuanNhaNuoc.forEach(cq => {
-                            webContext += `* Cơ quan/Tổ chức: ${cq.title}\\n`;
-                            if(cq.address) webContext += `  - Địa chỉ: ${cq.address}\\n`;
-                            if(cq.description) webContext += `  - Giới thiệu: ${cq.description}\\n`;
+                            webContext += `[Cơ quan/Tổ chức: ${cq.title}]\\n`;
+                            if(cq.address) webContext += `  - Địa chỉ trụ sở: ${cq.address}\\n`;
                             if (cq.departments && cq.departments.length > 0) {
-                                webContext += `  - Cán bộ/phòng ban:\\n`;
                                 cq.departments.forEach(dept => {
-                                    webContext += `    + ${dept.name}`;
-                                    if (dept.personName) webContext += `: ${dept.personName}`;
-                                    let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ' ').trim();
-                                    if (cleanRoles) webContext += ` (${cleanRoles})`;
-                                    if (dept.address) webContext += ` - Vị trí: ${dept.address}`;
-                                    webContext += `\\n`;
+                                    // Chuyển HTML chức vụ thành văn bản rành mạch
+                                    let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ' | ').replace(/\\|\\s*\\|/g, '|').trim();
+                                    if (cleanRoles.endsWith('|')) cleanRoles = cleanRoles.slice(0, -1); // Xóa gạch đứng cuối
+                                    
+                                    webContext += `  * Tên cán bộ: ${dept.personName || 'Chưa cập nhật'}\\n`;
+                                    webContext += `    - Chức vụ đảm nhiệm: ${cleanRoles}\\n`;
+                                    if (dept.address) webContext += `    - Nơi làm việc: ${dept.address}\\n`;
                                 });
                             }
                         });
@@ -556,7 +564,7 @@ const globalData = {
                     if (ASSETS.diemVanHoa) {
                         webContext += "\\n--- ĐIỂM VĂN HÓA LỊCH SỬ ---\\n";
                         ASSETS.diemVanHoa.forEach(vh => {
-                            webContext += `* Địa điểm: ${vh.title} | Địa chỉ: ${vh.address || ''}\\n`;
+                            webContext += `* Tên di tích: ${vh.title} | Địa chỉ: ${vh.address || ''}\\n`;
                         });
                     }
                 }
