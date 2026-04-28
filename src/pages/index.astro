@@ -48,9 +48,6 @@ const coQuanData = rawCoQuanData.map((coquan: any) => {
     }
 });
 
-// ==========================================================
-// 2. DỮ LIỆU TĨNH GLOBAL
-// ==========================================================
 const globalData = {
     logo: '<img src="/assets/logodoan.png" alt="Logo" class="w-full h-full object-contain drop-shadow-md">', 
     titleLine1: "ĐOÀN TNCS HỒ CHÍ MINH PHƯỜNG TÂN LẬP",
@@ -169,7 +166,6 @@ const globalData = {
             <div class="overflow-y-auto pr-2 custom-scrollbar flex-1 pb-4 relative z-10">
                 <div id="modalList"></div>
             </div>
-            <div class="absolute bottom-0 right-0 w-64 h-64 bg-brand-light rounded-tl-full opacity-50 pointer-events-none z-0"></div>
         </div>
     </div>
 
@@ -199,8 +195,8 @@ const globalData = {
             green: { text: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
             yellow: { text: 'text-amber-600', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700' }
         };
+
         document.addEventListener("DOMContentLoaded", () => {
-            // Mobile Menu
             const mobileBtn = document.getElementById('mobile-menu-btn');
             const mobileIcon = document.getElementById('mobile-menu-icon');
             const mobileMenu = document.getElementById('mobile-menu');
@@ -228,12 +224,12 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars');
                 });
             });
+
             document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
             document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
             document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
             document.getElementById('app-footer').innerText = ASSETS.global.footerText;
             
-            // Render Mục 1: Cơ quan nhà nước
             const nhaNuocContainer = document.getElementById('nhanuoc-list');
             ASSETS.coQuanNhaNuoc.forEach((item, index) => {
                 const t = themeColors[item.theme] || themeColors.blue;
@@ -261,7 +257,6 @@ const globalData = {
                     </div>`;
             });
 
-            // Render Mục 2: Điểm Văn Hóa
             const vanHoaContainer = document.getElementById('vanhoa-list');
             ASSETS.diemVanHoa.forEach((item, index) => {
                 vanHoaContainer.innerHTML += `
@@ -282,21 +277,17 @@ const globalData = {
                     </div>`;
             });
 
-            // Render Mục 3: Hội trường
             const hoiTruongContainer = document.getElementById('hoitruong-list');
             ASSETS.diemHoiTruong.forEach((item, index) => {
                 let delay = (index % 3) * 100; 
                 hoiTruongContainer.innerHTML += `
                     <a href="${item.mapLink}" target="_blank" class="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col hover:shadow-lg hover:shadow-blue-900/10 hover:-translate-y-2 hover:border-brand-blue/30 transition-all duration-300 cursor-pointer group" data-aos="fade-up" data-aos-delay="${delay}">
-                        <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-blue-50/70 rounded-bl-full -z-0 group-hover:scale-125 transition-transform duration-500"></div>
                         <div class="relative z-10 flex flex-col h-full">
                             <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-light text-brand-blue rounded-full text-[10px] sm:text-xs font-semibold mb-3 sm:mb-4 w-fit">
-                                <i class="fa-solid fa-location-dot"></i>
                                 <span>${item.badge}</span>
                             </div>
                             <div class="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm">
-                                <i class="fa-solid fa-location-dot text-slate-400 mt-1 w-3 sm:w-4 text-center"></i>
-                                <div><span class="text-slate-500 block text-[10px] sm:text-[11px] mb-0.5 uppercase tracking-wide">Địa chỉ:</span><span class="text-slate-800 font-medium">${item.address}</span></div>
+                                <div><span class="text-slate-800 font-medium">${item.address}</span></div>
                             </div>
                         </div>
                     </a>`;
@@ -309,14 +300,14 @@ const globalData = {
             AOS.init({ duration: 800, once: true, offset: 50 });
         });
 
-        // XỬ LÝ MODAL CHI TIẾT
-        const modal = document.getElementById('departmentModal');
-        const modalContent = document.getElementById('modalContent');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalSubtitle = document.getElementById('modalSubtitle');
-        const modalList = document.getElementById('modalList');
         window.openModal = function(itemId, type) {
+            const modal = document.getElementById('departmentModal');
+            const modalContent = document.getElementById('modalContent');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalSubtitle = document.getElementById('modalSubtitle');
+            const modalList = document.getElementById('modalList');
             modalList.innerHTML = '';
+            
             if (type === 'nhanuoc') {
                 const data = departmentData[itemId];
                 if (!data) return;
@@ -334,36 +325,25 @@ const globalData = {
                     let nStyle = dept.nameStyle || 'not-italic';
                     let nSize = dept.nameSize || 'text-base';
 
-                    let rColor = dept.roleColor || 'text-slate-500';
-                    let rWeight = dept.roleWeight || 'font-normal';
-                    let rStyle = dept.roleStyle || 'italic';
-                    let rSize = dept.roleSize || 'text-xs';
-
                     let nameHtml = dept.personName 
                         ? `<span class="${nColor} ${nWeight} ${nStyle} ${nSize} uppercase block mb-1">${dept.personName}</span>` 
                         : '';
                     let rolesHtml = dept.rolesHtml || '';
 
                     card.innerHTML = `
-                        <div class="absolute top-0 left-0 w-1 h-full bg-brand-blue opacity-50 group-hover:opacity-100 group-hover:w-2 transition-all duration-300"></div>
                         <div class="pl-3">
                             <h4 class="font-bold text-slate-800 text-base mb-3 border-b border-slate-50 pb-2">${dept.name}</h4>
                             <div class="flex flex-col gap-3 text-sm">
                                 ${nameHtml || rolesHtml ? `
-                                <div class="flex items-start gap-3">
-                                    <div class="w-6 h-6 rounded-full bg-blue-50 text-brand-blue flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-tie text-xs"></i></div>
-                                    <div>
-                                        <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.unitLabel}</span>
-                                        ${nameHtml}
-                                        <div class="${rColor} ${rWeight} ${rStyle} ${rSize} leading-snug">
-                                            ${rolesHtml}
-                                        </div>
-                                    </div>
+                                <div>
+                                    <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.unitLabel}</span>
+                                    ${nameHtml}
+                                    <div class="text-slate-500 italic text-xs leading-snug">${rolesHtml}</div>
                                 </div>` : ''}
                                 ${dept.address ? `
-                                <div class="flex items-start gap-3">
-                                    <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-door-open text-xs"></i></div>
-                                    <div><span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.roomLabel}</span><span class="text-slate-700 block">${dept.address}</span></div>
+                                <div>
+                                    <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.roomLabel}</span>
+                                    <span class="text-slate-700 block">${dept.address}</span>
                                 </div>` : ''}
                             </div>
                         </div>`;
@@ -380,36 +360,19 @@ const globalData = {
                 modalSubtitle.textContent = "Thông chi tiết di tích / điểm văn hóa";
                 modalList.className = "flex flex-col gap-6 pb-6";
                 
-                let galleryHTML = (data.gallery && data.gallery.length > 0) ? `
-                    <div class="mt-4">
-                        <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-images text-brand-blue"></i> Thư viện hình ảnh</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            ${data.gallery.map(img => `
-                                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden group/img cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
-                                    <div class="aspect-[4/3] overflow-hidden bg-slate-100"><img src="${img.image || img}" alt="${img.caption || 'Hình ảnh'}" class="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/500x375/e2e8f0/64748b?text=Hinh+Anh';"></div>
-                                    <div class="p-3 bg-white text-center"><p class="text-sm font-medium text-slate-700">${img.caption || ''}</p></div>
-                                </div>`).join('')}
-                        </div>
-                    </div>` : '';
                 const card = document.createElement('div');
                 card.className = "animate-[fadeInUp_0.4s_ease_forwards]";
                 card.innerHTML = `
                     <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-light rounded-bl-full -z-0 opacity-50"></div>
                         <div class="relative z-10">
-                            <h4 class="text-lg font-bold text-slate-800 mb-3"><i class="fa-solid fa-circle-info text-brand-blue mr-2"></i>Giới thiệu chung</h4>
                             <p class="text-slate-600 leading-relaxed text-base md:text-lg text-justify mb-6">${data.description}</p>
                             ${data.address ? `
                             <div class="inline-flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 w-full sm:w-auto">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-500 shrink-0"><i class="fa-solid fa-location-dot"></i></div>
-                                    <div><span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Địa chỉ</span><span class="font-medium text-sm text-slate-800">${data.address}</span></div>
-                                </div>
+                                <div><span class="font-medium text-sm text-slate-800">${data.address}</span></div>
                                 <a href="${data.mapLink}" target="_blank" class="sm:ml-auto w-full sm:w-auto text-center px-4 py-2 bg-brand-blue text-white text-sm font-semibold rounded-xl hover:bg-brand-dark transition-colors shadow-sm">Chỉ đường</a>
                             </div>` : ''}
                         </div>
-                    </div>
-                    ${galleryHTML}`;
+                    </div>`;
                 modalList.appendChild(card);
             }
 
@@ -422,6 +385,10 @@ const globalData = {
         };
 
         window.closeModal = function(isFromPopState = false) {
+            const modal = document.getElementById('departmentModal');
+            const modalContent = document.getElementById('modalContent');
+            const modalList = document.getElementById('modalList');
+            
             modalContent.classList.remove('scale-100', 'opacity-100');
             modalContent.classList.add('scale-90', 'opacity-0');
             setTimeout(() => {
@@ -434,14 +401,14 @@ const globalData = {
         };
 
         document.addEventListener('keydown', (event) => {
-            if (!modal.classList.contains('hidden')) {
-                if (event.key === 'Escape' || event.key === 'Backspace') {
-                    event.preventDefault(); 
-                    window.closeModal();
-                }
+            const modal = document.getElementById('departmentModal');
+            if (!modal.classList.contains('hidden') && (event.key === 'Escape' || event.key === 'Backspace')) {
+                event.preventDefault(); 
+                window.closeModal();
             }
         });
         window.addEventListener('popstate', (event) => {
+            const modal = document.getElementById('departmentModal');
             if (!modal.classList.contains('hidden')) {
                 window.closeModal(true); 
             }
@@ -449,7 +416,7 @@ const globalData = {
     </script>
 
     <style>
-        /* Hiệu ứng đổ bóng nhẹ cho Logo Đoàn (Drop Shadow) - Loại bỏ viền trắng */
+        /* Hiệu ứng Logo Bung lụa (không viền) */
         .drop-shadow-logo {
             filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.2));
             transition: filter 0.3s ease;
@@ -458,7 +425,7 @@ const globalData = {
             filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.3));
         }
 
-        /* Tùy chỉnh thanh cuộn Chatbox */
+        /* Thanh cuộn */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
@@ -466,7 +433,7 @@ const globalData = {
     </style>
 
     <button id="chat-toggle" class="fixed bottom-6 right-6 flex items-center justify-center hover:scale-110 transition-transform duration-300 z-50 focus:outline-none">
-        <img src="/assets/logodoan.png" class="w-16 h-16 object-contain drop-shadow-logo" alt="Chat Logo Đoàn Phường" />
+        <img src="/assets/logodoan.png" class="w-16 h-16 object-contain drop-shadow-logo" alt="Chat Logo" />
     </button>
 
     <div id="chat-window" class="fixed bottom-6 right-6 w-[360px] max-w-[90vw] h-[550px] max-h-[80vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 hidden transition-all duration-300">
@@ -516,22 +483,11 @@ const globalData = {
             const sendBtn = document.getElementById('send-btn');
             const chatMessages = document.getElementById('chat-messages');
 
-            // Biến lưu trữ Ngữ cảnh giao tiếp (Trí nhớ)
             let chatHistory = [];
 
-            // Ẩn/Hiện chat
-            chatToggle.addEventListener('click', () => {
-                chatWindow.classList.remove('hidden');
-                chatToggle.classList.add('hidden');
-            });
-            closeChat.addEventListener('click', () => {
-                chatWindow.classList.add('hidden');
-                chatToggle.classList.remove('hidden');
-            });
-
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendMessage();
-            });
+            chatToggle.addEventListener('click', () => { chatWindow.classList.remove('hidden'); chatToggle.classList.add('hidden'); });
+            closeChat.addEventListener('click', () => { chatWindow.classList.add('hidden'); chatToggle.classList.remove('hidden'); });
+            chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
             sendBtn.addEventListener('click', sendMessage);
 
             async function sendMessage() {
@@ -539,29 +495,28 @@ const globalData = {
                 if (!message) return;
 
                 // ==========================================
-                // ĐỊNH DẠNG CÂU VĂN CHẶT CHẼ, GỘP CHUNG TÊN VÀ CHỨC VỤ
+                // ĐỊNH DẠNG KEY - VALUE RÕ RÀNG ĐỂ ÉP AI ĐỌC CHUẨN
                 // ==========================================
                 let webContext = "DỮ LIỆU TỪ TRANG WEB:\\n";
                 if (typeof ASSETS !== 'undefined') {
                     if (ASSETS.coQuanNhaNuoc) {
-                        webContext += "\\n--- CÁN BỘ & CƠ QUAN LÃNH ĐẠO ---\\n";
+                        webContext += "\\n--- DANH BẠ CÁN BỘ & CƠ QUAN ---\\n";
                         ASSETS.coQuanNhaNuoc.forEach(cq => {
                             if (cq.departments && cq.departments.length > 0) {
                                 cq.departments.forEach(dept => {
-                                    // Loại bỏ thẻ HTML và khoảng trắng thừa
                                     let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
                                     let person = dept.personName ? dept.personName : "Chưa cập nhật";
                                     
-                                    // Tạo thành một câu văn hoàn chỉnh rõ ràng nhất để AI không thể đọc sai
-                                    webContext += `- Tên cán bộ: ${person}. Chức vụ/Phòng ban: ${dept.name} ${cleanRoles}. Trực thuộc cơ quan: ${cq.title}. Nơi làm việc: ${dept.address || cq.address || 'Chưa rõ'}.\\n`;
+                                    // Trình bày dạng Khối thông tin (Block) để AI Llama-3 không bị rối
+                                    webContext += `[NHÂN SỰ]\\n- Họ tên: ${person}\\n- Chức vụ: ${dept.name} ${cleanRoles}\\n- Cơ quan: ${cq.title}\\n- Nơi làm việc: ${dept.address || cq.address || 'Chưa rõ'}\\n\\n`;
                                 });
                             }
                         });
                     }
                     if (ASSETS.diemVanHoa) {
-                        webContext += "\\n--- ĐIỂM VĂN HÓA LỊCH SỬ ---\\n";
+                        webContext += "\\n--- ĐỊA ĐIỂM VĂN HÓA LỊCH SỬ ---\\n";
                         ASSETS.diemVanHoa.forEach(vh => {
-                            webContext += `- Tên di tích: ${vh.title}. Địa chỉ tại: ${vh.address || 'Chưa rõ'}\\n`;
+                            webContext += `[ĐỊA ĐIỂM]\\n- Tên di tích: ${vh.title}\\n- Địa chỉ: ${vh.address || 'Chưa rõ'}\\n\\n`;
                         });
                     }
                 }
@@ -570,14 +525,12 @@ const globalData = {
                 chatInput.disabled = true;
                 sendBtn.disabled = true;
                 
-                // Tin nhắn của User
                 chatMessages.innerHTML += `
                     <div class="flex items-start gap-2 justify-end">
                         <div class="bg-[#005bb5] text-white p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%]">${message}</div>
                     </div>`;
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                // Hiệu ứng "AI Đang gõ"
                 const typingId = 'typing-' + Date.now();
                 chatMessages.innerHTML += `
                     <div id="${typingId}" class="flex items-start gap-2">
@@ -589,60 +542,39 @@ const globalData = {
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
                 try {
-                    // Gửi lên Cloudflare API
                     const response = await fetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            message: message, 
-                            webData: webContext,
-                            history: chatHistory 
-                        })
+                        body: JSON.stringify({ message: message, webData: webContext, history: chatHistory })
                     });
                     const data = await response.json();
                     
                     document.getElementById(typingId).remove();
 
-                    // ==========================================
-                    // XỬ LÝ TEXT: IN ĐẬM VÀ TỰ ĐỘNG TẠO NÚT XANH
-                    // ==========================================
                     let replyHtml = data.reply;
-                    
-                    // Dọn dẹp lỗi ảo giác dấu ngoặc vuông nếu có
                     replyHtml = replyHtml.replace(/\[.*?\]/g, ""); 
-
-                    // CHUYỂN ĐỔI CHỮ IN ĐẬM: Đổi các ký tự Markdown ** của AI thành thẻ <b> để in đậm trên Web
-                    replyHtml = replyHtml.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+                    replyHtml = replyHtml.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>"); 
                     
-                    // Tự động tìm và tách link để nhét vào Nút Xanh
                     const urlMatch = replyHtml.match(/(https?:\/\/[^\s)]+)/);
                     if (urlMatch) {
                         const url = urlMatch[0];
-                        // Xóa các chữ "Link bản đồ" thừa mứa
                         replyHtml = replyHtml.replace(/\|?\s*\*?Link bản đồ:?\*?\s*(https?:\/\/[^\s)]+)/gi, "");
                         replyHtml = replyHtml.replace(/(https?:\/\/[^\s)]+)/g, ""); 
-                        
-                        // Chèn nút HTML
                         replyHtml += `<div class="mt-3"><a href="${url}" target="_blank" class="inline-flex items-center px-4 py-2 bg-[#005bb5] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-blue-700 transition-colors"><i class="fa-solid fa-map-location-dot mr-2"></i> Chỉ đường ngay</a></div>`;
                     }
                     
-                    // In tin nhắn của AI
                     chatMessages.innerHTML += `
                         <div class="flex items-start gap-2">
                             <img src="/assets/logodoan.png" class="w-8 h-8 object-contain drop-shadow-logo mt-1 flex-shrink-0" alt="Logo Bot" />
                             <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-[85%] whitespace-pre-wrap leading-relaxed">${replyHtml}</div>
                         </div>`;
 
-                    // Lưu lịch sử giao tiếp (Nhớ 6 câu gần nhất)
                     chatHistory.push({ role: 'user', content: message });
                     chatHistory.push({ role: 'assistant', content: data.reply });
-                    if (chatHistory.length > 6) {
-                        chatHistory = chatHistory.slice(chatHistory.length - 6);
-                    }
+                    if (chatHistory.length > 6) chatHistory = chatHistory.slice(chatHistory.length - 6);
                         
                 } catch (error) {
                     document.getElementById(typingId).remove();
-                    // Lỗi 
                     chatMessages.innerHTML += `
                         <div class="flex items-start gap-2">
                             <img src="/assets/logodoan.png" class="w-8 h-8 object-contain drop-shadow-logo mt-1 flex-shrink-0" alt="Logo Bot" />
