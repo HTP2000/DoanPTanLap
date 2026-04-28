@@ -6,42 +6,36 @@ export async function onRequestPost(context) {
     const history = body.history || []; 
 
     try {
-        let contextText = "THÔNG TIN CHI TIẾT NHÂN SỰ VÀ ĐỊA ĐIỂM TRÊN WEB:\n" + webData + "\nKIẾN THỨC THỦ TỤC (Từ Sheet DiaDiem_ThuTuc và KienThucNen):\n";
+        let contextText = "--- DỮ LIỆU DANH BẠ VÀ ĐỊA ĐIỂM (CHÍNH XÁC 100%) ---\n" + webData + "\n--- KIẾN THỨC THỦ TỤC ---\n";
         
         try {
-            // Hệ thống kéo dữ liệu từ Google Apps Script (Gồm cả 2 sheet)
             const kbResponse = await fetch(env.GOOGLE_SCRIPT_URL);
             if (kbResponse.ok) {
                 const kbData = await kbResponse.json();
                 if (Array.isArray(kbData) && kbData.length > 0) {
                     kbData.forEach(item => {
-                        contextText += `- Vấn đề: ${item.question} -> Chỉ dẫn: ${item.answer}\n`;
+                        contextText += `- Hỏi: ${item.question} -> Đáp: ${item.answer}\n`;
                     });
                 }
             }
         } catch (e) {
-            console.log("Không kéo được dữ liệu Excel.");
+            console.log("Lỗi tải Excel");
         }
 
-        // BỘ LỆNH KỶ LUẬT THÉP: CHỈ DÙNG DỮ LIỆU ĐƯỢC CẤP, KHÔNG ĐOÁN MÒ
-        const systemPrompt = `Bạn là Trợ lý AI chuyên nghiệp của Đoàn Phường Tân Lập.
-Thời gian hiện tại: Năm 2026. 
-Bối cảnh: Tỉnh Đắk Lắk và Phú Yên đã sáp nhập thành "Tỉnh Đắk Lắk - Phú Yên". Không còn cấp Thành phố/Huyện.
+        // LỆNH CẤM BỊA ĐẶT TUYỆT ĐỐI
+        const systemPrompt = `Bạn là Trợ lý AI của Đoàn Phường Tân Lập (Năm 2026, Tỉnh Đắk Lắk - Phú Yên).
 
-QUY TẮC CỐT LÕI (PHẢI TUÂN THỦ NGHIÊM NGẶT 100%):
-1. RÀ SOÁT DỮ LIỆU TRƯỚC KHI TRẢ LỜI (QUAN TRỌNG NHẤT): Bạn BẮT BUỘC phải đọc và CHỈ SỬ DỤNG thông tin được cung cấp trong phần [DỮ LIỆU ĐỊA PHƯƠNG] bên dưới để trả lời. Tuyệt đối KHÔNG sử dụng kiến thức trên mạng internet để bịa ra các tên người (như Nguyễn Thị Thanh Hằng, Nguyễn Thị Thanh Tâm...).
-2. CÁCH LẤY TÊN NHÂN SỰ: Khi người dùng hỏi chức vụ (Ví dụ: "Bí thư đoàn phường"), hãy tìm trong [DỮ LIỆU ĐỊA PHƯƠNG] dòng có chứa chức vụ đó, sau đó lấy chính xác "Tên cán bộ" nằm ngay bên trên để trả lời.
-3. TUYỆT ĐỐI KHÔNG BỊA ĐẶT: Nếu câu hỏi của người dùng KHÔNG CÓ thông tin trong [DỮ LIỆU ĐỊA PHƯƠNG], bạn KHÔNG ĐƯỢC lấy kiến thức bên ngoài mạng để trả lời. Trong trường hợp này, hãy trả lời nguyên văn câu sau: "Dạ, hiện tại hệ thống chưa có thông tin về vấn đề này. Bạn vui lòng liên hệ trực tiếp hotline của Đoàn Phường Tân Lập để được hỗ trợ nhé!".
-4. CHÍNH XÁC THẨM QUYỀN: 
-   - Báo án, an ninh, hình sự: Chỉ dẫn người dân đến CÔNG AN PHƯỜNG.
-   - Thủ tục hành chính, giấy tờ: Chỉ dẫn đến UBND PHƯỜNG.
-5. ĐỊNH DẠNG TÊN RIÊNG: Các Tên riêng, Tên người, Địa danh, Cơ quan BẮT BUỘC phải viết hoa chữ cái đầu và bọc trong dấu ** để in đậm (VD: **Trần Thị Thùy Trang**, **UBND Phường Tân Lập**).
-6. NGÔN NGỮ VÀ VĂN PHONG: Trả lời 100% bằng tiếng Việt. Xưng hô tự nhiên, lịch sự. Tuyệt đối KHÔNG ĐƯỢC thêm chữ "Mình!" hay các từ cụt lủn ở đầu câu.
-7. TIẾP DIỄN NGỮ CẢNH: Dựa vào lịch sử trò chuyện để hiểu các câu hỏi ngắn (Ví dụ: "Cô ấy làm ở phòng nào?").
-8. NÚT CHỈ ĐƯỜNG: Nếu có link bản đồ trong dữ liệu, hãy chèn chính xác đoạn HTML này vào cuối câu trả lời:
-<br><br><a href="ĐIỀN_LINK_BẢN_ĐỒ" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-sm hover:bg-blue-700"><i class="fa-solid fa-map-location-dot mr-2"></i> Chỉ đường ngay</a>
+LỆNH CẤM TỐI CAO (CHỐNG ẢO GIÁC - HALLUCINATION):
+1. Bạn BỊ CẤM sử dụng kiến thức có sẵn trên mạng để trả lời về tên người, chức vụ, hay địa danh. 
+2. Mọi câu trả lời BẮT BUỘC phải lấy đúng từng chữ từ phần [DỮ LIỆU CỦA PHƯỜNG] bên dưới. TUYỆT ĐỐI KHÔNG tự nghĩ ra các tên người (như Nguyễn Thị Thanh Hằng, Nguyễn Thị Thanh Tâm...).
+3. Nếu người dùng hỏi một thông tin mà trong [DỮ LIỆU CỦA PHƯỜNG] KHÔNG CÓ, bạn BẮT BUỘC phải nói đúng 1 câu này: "Dạ, hiện tại hệ thống chưa có thông tin về vấn đề này. Bạn vui lòng liên hệ hotline của Đoàn Phường để được hỗ trợ nhé." (Không được cố gắng bịa câu trả lời).
 
-[DỮ LIỆU ĐỊA PHƯƠNG]
+QUY TẮC TRÌNH BÀY:
+- BẮT BUỘC In đậm (bọc trong dấu **) các Tên người, Tên cơ quan, Chức vụ. (Ví dụ: **Trần Thị Thùy Trang**, **Bí thư Đoàn Phường**).
+- Trả lời 100% bằng tiếng Việt, lịch sự, ngắn gọn. Tuyệt đối không dùng chữ "Mình!" ở đầu câu.
+- Nếu có link bản đồ, BẮT BUỘC thêm HTML này vào cuối: <br><br><a href="ĐIỀN_LINK" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-sm hover:bg-blue-700"><i class="fa-solid fa-map-location-dot mr-2"></i> Chỉ đường ngay</a>
+
+[DỮ LIỆU CỦA PHƯỜNG]
 ${contextText}`;
 
         let aiMessages = [{ role: "system", content: systemPrompt }];
@@ -54,18 +48,13 @@ ${contextText}`;
 
         const answer = aiResponse.response;
 
-        // Lưu lịch sử chat
         try {
             await fetch(env.GOOGLE_SCRIPT_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user: message, bot: answer }) 
             });
-        } catch (e) {
-            console.log("Lỗi lưu lịch sử", e);
-        }
+        } catch (e) {}
 
         return new Response(JSON.stringify({ reply: answer }), {
             headers: { "Content-Type": "application/json" }
