@@ -519,6 +519,7 @@ const globalData = {
                 chatWindow.classList.add('hidden'); chatToggle.classList.remove('hidden');
             });
 
+            // Vẫn nạp lịch sử từ bộ nhớ (để giữ trí nhớ cho AI)
             let chatHistory = JSON.parse(localStorage.getItem('tanlap_pro_history')) || [];
             
             function scrollToBottom() {
@@ -526,22 +527,14 @@ const globalData = {
             }
 
             function renderHistory() {
-                chatMessages.innerHTML = ''; 
-                if (chatHistory.length === 0) {
-                    chatMessages.insertAdjacentHTML('beforeend', `
-                        <div class="flex items-start gap-2 mb-2">
-                            <img src="/assets/logodoan.png" class="w-8 h-8 object-contain drop-shadow-logo mt-1 flex-shrink-0" />
-                            <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed max-w-[85%]">
-                                Chào bạn! Hệ thống AI Địa phương số đã sẵn sàng. Bạn cần tìm hiểu thông tin hành chính, điểm đến hay thủ tục nào?
-                            </div>
-                        </div>`);
-                } else {
-                    chatHistory.forEach(msg => {
-                        if (msg.role === 'user') appendUserMsg(msg.content);
-                        else appendAIMsg(msg.content, false);
-                    });
-                    setTimeout(scrollToBottom, 100);
-                }
+                // Luôn dọn sạch màn hình khi tải lại trang, chỉ in câu chào mặc định
+                chatMessages.innerHTML = `
+                    <div class="flex items-start gap-2 mb-2">
+                        <img src="/assets/logodoan.png" class="w-8 h-8 object-contain drop-shadow-logo mt-1 flex-shrink-0" />
+                        <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed max-w-[85%]">
+                            Chào bạn! Hệ thống AI Địa phương số đã sẵn sàng. Bạn cần tìm hiểu thông tin hành chính, điểm đến hay thủ tục nào?
+                        </div>
+                    </div>`;
             }
             renderHistory();
 
@@ -585,13 +578,16 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // THU THẬP TÊN NHÂN SỰ TỪ GIAO DIỆN WEB ĐỂ BƠM CHO AI
-                let webContext = "";
+                // THU THẬP TÊN NHÂN SỰ VÀ CHỨC DANH TỪ WEB ĐỂ BƠM CHO AI
+                let webContext = "DANH SÁCH NHÂN SỰ VÀ CHỨC VỤ THỰC TẾ:\n";
                 if (typeof ASSETS !== 'undefined' && ASSETS.coQuanNhaNuoc) {
                     ASSETS.coQuanNhaNuoc.forEach(cq => {
                         if (cq.departments) {
                             cq.departments.forEach(dept => {
-                                webContext += `* Cơ quan: ${cq.title} - Chức vụ/Phòng: ${dept.name} - Người phụ trách: ${dept.personName || 'Chưa cập nhật'}\n`;
+                                // Lọc bỏ thẻ HTML để lấy chức danh phụ sạch sẽ (Bí thư, Phó CT...)
+                                let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ', ').trim();
+                                
+                                webContext += `* Cơ quan: ${cq.title} - Bộ phận: ${dept.name} - Cán bộ: ${dept.personName || 'Chưa cập nhật'} - Chức vụ kiêm nhiệm: ${cleanRoles}\n`;
                             });
                         }
                     });
@@ -613,7 +609,7 @@ const globalData = {
                     const response = await fetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message, history: chatHistory, webData: webContext }) // GỬI KÈM WEBDATA
+                        body: JSON.stringify({ message: message, history: chatHistory, webData: webContext }) 
                     });
 
                     const reader = response.body.getReader();
@@ -638,7 +634,9 @@ const globalData = {
                                             scrollToBottom();
                                         }
                                     }
-                                } catch (e) { } 
+                                } catch (e) {
+                                    console.error("Lỗi parse JSON đoạn chunk:", e);
+                                } 
                             }
                         }
                     }
@@ -651,6 +649,7 @@ const globalData = {
                     localStorage.setItem('tanlap_pro_history', JSON.stringify(chatHistory));
 
                 } catch (error) {
+                    console.error("Lỗi Fetch API:", error);
                     const existingBubble = document.getElementById(msgId);
                     if (existingBubble) {
                         existingBubble.innerHTML = `<span class="text-red-500 font-medium">Lỗi mạng! Vui lòng kiểm tra kết nối.</span>`;
