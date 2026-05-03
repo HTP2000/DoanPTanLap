@@ -38,9 +38,13 @@ export async function onRequestPost(context) {
             returnMetadata: true 
         });
         
-        const retrievedContext = vectorMatches.matches && vectorMatches.matches.length > 0 
-            ? vectorMatches.matches.map(m => m.metadata.text).join('\n\n')
-            : "Dữ liệu địa phương không chứa thông tin này.";
+        const cleanMatches = vectorMatches.matches.filter(m => 
+    !m.metadata.text.includes("Nguyễn Văn A")
+    );
+
+const retrievedContext = cleanMatches.length > 0
+    ? cleanMatches.map(m => m.metadata.text).join('\n\n')
+    : "Dữ liệu địa phương không chứa thông tin này.";
 
         // ==========================================
         // 4. KIỂM SOÁT LLM BẰNG PROMPT
