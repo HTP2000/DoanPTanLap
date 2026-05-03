@@ -28,7 +28,7 @@ export async function onRequestPost(context) {
         const vectorFilter = isProcedure ? { type: "thutuc" } : { source: "sanity" };
 
         // ==========================================
-        // 3. TÌM KIẾM VECTOR DB CHUẨN RAG (Thay thế việc fetch Excel on-the-fly)
+        // 3. TÌM KIẾM VECTOR DB CHUẨN RAG
         // ==========================================
         const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
         
@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
             : "Dữ liệu địa phương không chứa thông tin này.";
 
         // ==========================================
-        // 4. KIỂM SOÁT LLM BẰNG PROMPT GỐC CỦA BẠN ĐÃ TỐI ƯU
+        // 4. KIỂM SOÁT LLM BẰNG PROMPT
         // ==========================================
         const systemPrompt = `Bạn là Trợ lý AI thân thiện của Đoàn Phường Tân Lập. Xưng hô là "Mình" và gọi người dùng là "Bạn".
 Thời gian hiện tại: Năm 2026. 
@@ -63,9 +63,10 @@ ${retrievedContext}`;
         aiMessages.push({ role: "user", content: message });
 
         // ==========================================
-        // 5. STREAMING KẾT HỢP XỬ LÝ NGẦM (Thay thế trả JSON cũ)
+        // 5. STREAMING KẾT HỢP XỬ LÝ NGẦM
         // ==========================================
-        const stream = await env.AI.run('@cf/meta/llama-3-8b-instruct', { messages, stream: true });
+        // Lỗi cũ nằm ở dòng dưới này, mình đã sửa { messages } thành { messages: aiMessages }
+        const stream = await env.AI.run('@cf/meta/llama-3-8b-instruct', { messages: aiMessages, stream: true });
 
         const { readable, writable } = new TransformStream();
         const writer = writable.getWriter();
@@ -85,7 +86,7 @@ ${retrievedContext}`;
                             await env.RAG_CACHE.put(cacheKey, fullAnswer, { expirationTtl: 259200 });
                         }
 
-                        // Lưu lịch sử chat về Google Sheet (Bê y nguyên logic lưu từ code cũ của bạn)
+                        // Lưu lịch sử chat về Google Sheet
                         if (env.GOOGLE_SCRIPT_URL) {
                             try {
                                 await fetch(env.GOOGLE_SCRIPT_URL, {
