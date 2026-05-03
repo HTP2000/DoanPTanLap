@@ -585,6 +585,18 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
+                // THU THẬP TÊN NHÂN SỰ TỪ GIAO DIỆN WEB ĐỂ BƠM CHO AI
+                let webContext = "";
+                if (typeof ASSETS !== 'undefined' && ASSETS.coQuanNhaNuoc) {
+                    ASSETS.coQuanNhaNuoc.forEach(cq => {
+                        if (cq.departments) {
+                            cq.departments.forEach(dept => {
+                                webContext += `* Cơ quan: ${cq.title} - Chức vụ/Phòng: ${dept.name} - Người phụ trách: ${dept.personName || 'Chưa cập nhật'}\n`;
+                            });
+                        }
+                    });
+                }
+
                 chatInput.value = '';
                 chatInput.disabled = true;
                 sendBtn.disabled = true;
@@ -601,7 +613,7 @@ const globalData = {
                     const response = await fetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message, history: chatHistory })
+                        body: JSON.stringify({ message: message, history: chatHistory, webData: webContext }) // GỬI KÈM WEBDATA
                     });
 
                     const reader = response.body.getReader();
@@ -626,9 +638,7 @@ const globalData = {
                                             scrollToBottom();
                                         }
                                     }
-                                } catch (e) {
-                                    console.error("Lỗi parse JSON đoạn chunk:", e);
-                                } 
+                                } catch (e) { } 
                             }
                         }
                     }
@@ -641,7 +651,6 @@ const globalData = {
                     localStorage.setItem('tanlap_pro_history', JSON.stringify(chatHistory));
 
                 } catch (error) {
-                    console.error("Lỗi Fetch API:", error);
                     const existingBubble = document.getElementById(msgId);
                     if (existingBubble) {
                         existingBubble.innerHTML = `<span class="text-red-500 font-medium">Lỗi mạng! Vui lòng kiểm tra kết nối.</span>`;
