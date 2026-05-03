@@ -1,0 +1,13 @@
+# Khai báo Vector Database
+[[vectorize]]
+binding = "VECTORIZE_INDEX"
+index_name = "tanlap-index"
+
+# Khai báo KV Cache (Thay id bằng chuỗi bạn vừa copy ở Thao tác 1.2)
+[[kv_namespaces]]
+binding = "RAG_CACHE"
+id = "e105c6c0ac014015a461f6fa30fbf0aa"
+
+# Cài đặt CronJob chạy tự động đồng bộ dữ liệu vào 12h trưa và 12h đêm mỗi ngày
+[triggers]
+crons = ["0 0,12 * * *"]
