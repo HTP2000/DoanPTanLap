@@ -601,8 +601,9 @@ const globalData = {
                         body: JSON.stringify({ message: message, history: chatHistory })
                     });
 
+                    // BẮT BUỘC ĐỌC STREAM BẰNG CÁCH NÀY
                     const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
+                    const decoder = new TextDecoder("utf-8");
 
                     while (true) {
                         const { done, value } = await reader.read();
@@ -614,13 +615,19 @@ const globalData = {
                         for (const line of lines) {
                             if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                                 try {
-                                    const data = JSON.parse(line.replace('data: ', ''));
-                                    if (data.response) {
-                                        aiFullResponse += data.response;
-                                        appendAIMsg(aiFullResponse, true, msgId);
-                                        scrollToBottom();
+                                    // Phân tách JSON an toàn
+                                    const jsonStr = line.replace('data: ', '').trim();
+                                    if (jsonStr) {
+                                        const data = JSON.parse(jsonStr);
+                                        if (data.response) {
+                                            aiFullResponse += data.response;
+                                            appendAIMsg(aiFullResponse, true, msgId);
+                                            scrollToBottom();
+                                        }
                                     }
-                                } catch (e) { } 
+                                } catch (e) {
+                                    console.error("Lỗi parse JSON đoạn chunk:", e);
+                                } 
                             }
                         }
                     }
@@ -633,6 +640,7 @@ const globalData = {
                     localStorage.setItem('tanlap_pro_history', JSON.stringify(chatHistory));
 
                 } catch (error) {
+                    console.error("Lỗi Fetch API:", error);
                     document.getElementById(msgId).innerHTML = `<span class="text-red-500 font-medium">Lỗi mạng! Vui lòng kiểm tra kết nối.</span>`;
                 }
 
