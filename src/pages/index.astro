@@ -528,13 +528,13 @@ const globalData = {
             function renderHistory() {
                 chatMessages.innerHTML = ''; 
                 if (chatHistory.length === 0) {
-                    chatMessages.innerHTML = `
-                        <div class="flex items-start gap-2">
+                    chatMessages.insertAdjacentHTML('beforeend', `
+                        <div class="flex items-start gap-2 mb-2">
                             <img src="/assets/logodoan.png" class="w-8 h-8 object-contain drop-shadow-logo mt-1 flex-shrink-0" />
                             <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed max-w-[85%]">
                                 Chào bạn! Hệ thống AI Địa phương số đã sẵn sàng. Bạn cần tìm hiểu thông tin hành chính, điểm đến hay thủ tục nào?
                             </div>
-                        </div>`;
+                        </div>`);
                 } else {
                     chatHistory.forEach(msg => {
                         if (msg.role === 'user') appendUserMsg(msg.content);
@@ -557,24 +557,27 @@ const globalData = {
             }
 
             function appendUserMsg(text) {
-                chatMessages.innerHTML += `
+                chatMessages.insertAdjacentHTML('beforeend', `
                     <div class="flex items-start gap-2 justify-end mb-2">
                         <div class="bg-[#005bb5] text-white p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%]">${text}</div>
-                    </div>`;
+                    </div>`);
             }
 
             function appendAIMsg(text, isTyping = false, id = '') {
                 const typingCursor = isTyping ? `<span class="w-2 h-4 bg-[#005bb5] animate-pulse inline-block align-middle ml-1 rounded-sm"></span>` : '';
                 const content = formatMarkdown(text) + typingCursor;
                 
-                if (id) {
-                    document.getElementById(id).innerHTML = content;
+                const existingBubble = id ? document.getElementById(id) : null;
+
+                if (existingBubble) {
+                    existingBubble.innerHTML = content;
                 } else {
-                    chatMessages.innerHTML += `
+                    const bubbleIdAttr = id ? `id="${id}"` : '';
+                    chatMessages.insertAdjacentHTML('beforeend', `
                         <div class="flex items-start gap-2 mb-2">
                             <img src="/assets/logodoan.png" class="w-8 h-8 object-contain drop-shadow-logo mt-1 flex-shrink-0" />
-                            <div id="${id}" class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-[85%] leading-relaxed">${content}</div>
-                        </div>`;
+                            <div ${bubbleIdAttr} class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 max-w-[85%] leading-relaxed">${content}</div>
+                        </div>`);
                 }
             }
 
@@ -601,7 +604,6 @@ const globalData = {
                         body: JSON.stringify({ message: message, history: chatHistory })
                     });
 
-                    // BẮT BUỘC ĐỌC STREAM BẰNG CÁCH NÀY
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder("utf-8");
 
@@ -615,7 +617,6 @@ const globalData = {
                         for (const line of lines) {
                             if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                                 try {
-                                    // Phân tách JSON an toàn
                                     const jsonStr = line.replace('data: ', '').trim();
                                     if (jsonStr) {
                                         const data = JSON.parse(jsonStr);
@@ -641,7 +642,10 @@ const globalData = {
 
                 } catch (error) {
                     console.error("Lỗi Fetch API:", error);
-                    document.getElementById(msgId).innerHTML = `<span class="text-red-500 font-medium">Lỗi mạng! Vui lòng kiểm tra kết nối.</span>`;
+                    const existingBubble = document.getElementById(msgId);
+                    if (existingBubble) {
+                        existingBubble.innerHTML = `<span class="text-red-500 font-medium">Lỗi mạng! Vui lòng kiểm tra kết nối.</span>`;
+                    }
                 }
 
                 chatInput.disabled = false;
