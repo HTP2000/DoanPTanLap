@@ -118,7 +118,7 @@ const globalData = {
         <section id="nhanuoc" class="scroll-mt-24">
             <div class="text-center mb-10" data-aos="fade-up">
                 <h2 class="inline-block text-2xl md:text-3xl font-bold text-slate-800 section-title-line mb-4">Cơ Quan Nhà Nước</h2>
-                <p class="text-slate-500 max-w-2xl mx-auto text-sm md:text-base">Thông liên hệ và cơ cấu tổ chức của các cơ quan ban ngành tại địa phương.</p>
+                <p class="text-slate-500 max-w-2xl mx-auto text-sm md:text-base">Thông tin liên hệ và cơ cấu tổ chức của các cơ quan ban ngành tại địa phương.</p>
             </div>
             <div id="nhanuoc-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"></div>
         </section>
@@ -183,6 +183,7 @@ const globalData = {
             diemVanHoa: vanHoaData,
             diemHoiTruong: tdpData
         };
+
         const departmentData = {};
         ASSETS.coQuanNhaNuoc.forEach(item => {
             departmentData[item.id] = { 
@@ -193,12 +194,14 @@ const globalData = {
                 roomLabel: item.roomLabel || "Tầng / Phòng"
             };
         });
+
         const themeColors = {
             blue: { text: 'text-blue-600', bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
             red: { text: 'text-red-600', bg: 'bg-red-50', badge: 'bg-red-100 text-red-700' },
             green: { text: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
             yellow: { text: 'text-amber-600', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700' }
         };
+
         document.addEventListener("DOMContentLoaded", () => {
             // Mobile Menu
             const mobileBtn = document.getElementById('mobile-menu-btn');
@@ -220,6 +223,7 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars'); 
                 }
             });
+
             mobileLinks.forEach(link => {
                 link.addEventListener('click', () => {
                     mobileMenu.classList.add('hidden');
@@ -228,11 +232,12 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars');
                 });
             });
+
             document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
             document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
             document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
             document.getElementById('app-footer').innerText = ASSETS.global.footerText;
-            
+
             // Render Mục 1: Cơ quan nhà nước
             const nhaNuocContainer = document.getElementById('nhanuoc-list');
             ASSETS.coQuanNhaNuoc.forEach((item, index) => {
@@ -306,6 +311,7 @@ const globalData = {
                 strings: ASSETS.global.subtitles,
                 typeSpeed: 60, backSpeed: 30, backDelay: 2500, loop: true
             });
+
             AOS.init({ duration: 800, once: true, offset: 50 });
         });
 
@@ -315,6 +321,7 @@ const globalData = {
         const modalTitle = document.getElementById('modalTitle');
         const modalSubtitle = document.getElementById('modalSubtitle');
         const modalList = document.getElementById('modalList');
+
         window.openModal = function(itemId, type) {
             modalList.innerHTML = '';
             if (type === 'nhanuoc') {
@@ -384,7 +391,7 @@ const globalData = {
                     <div class="mt-4">
                         <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-images text-brand-blue"></i> Thư viện hình ảnh</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            ${data.gallery.map(img => `
+                             ${data.gallery.map(img => `
                                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden group/img cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
                                     <div class="aspect-[4/3] overflow-hidden bg-slate-100"><img src="${img.image || img}" alt="${img.caption || 'Hình ảnh'}" class="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/500x375/e2e8f0/64748b?text=Hinh+Anh';"></div>
                                     <div class="p-3 bg-white text-center"><p class="text-sm font-medium text-slate-700">${img.caption || ''}</p></div>
@@ -441,6 +448,7 @@ const globalData = {
                 }
             }
         });
+        
         window.addEventListener('popstate', (event) => {
             if (!modal.classList.contains('hidden')) {
                 window.closeModal(true); 
@@ -449,7 +457,6 @@ const globalData = {
     </script>
 
     <style>
-        /* Hiệu ứng đổ bóng nhẹ cho Logo Đoàn (Drop Shadow) */
         .drop-shadow-logo {
             filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.2));
             transition: filter 0.3s ease;
@@ -457,8 +464,6 @@ const globalData = {
         #chat-toggle:hover .drop-shadow-logo {
             filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.3));
         }
-
-        /* Tùy chỉnh thanh cuộn Chatbox */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
@@ -488,12 +493,11 @@ const globalData = {
         </div>
 
         <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#f8f9fa] flex flex-col gap-4 text-sm custom-scrollbar pb-6 scroll-smooth">
-            <!-- Tin nhắn sẽ hiển thị ở đây -->
-        </div>
+            </div>
 
         <div class="p-3 bg-white border-t border-gray-100 z-10">
             <div class="relative flex items-center">
-                <input type="text" id="chat-input" placeholder="Nhập câu hỏi (VD: Xin thủ tục...)" 
+                <input type="text" id="chat-input" placeholder="Nhập câu hỏi (VD: Ai là Bí thư...)" 
                     class="w-full pl-5 pr-14 py-3 bg-[#f3f4f6] border border-transparent rounded-full focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 text-[14px] transition-all">
                 <button id="send-btn" class="absolute right-1.5 w-[36px] h-[36px] bg-[#005bb5] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-sm">
                     <i class="fa-solid fa-paper-plane text-[13px] ml-[-2px]"></i>
@@ -515,11 +519,11 @@ const globalData = {
                 chatWindow.classList.remove('hidden'); chatToggle.classList.add('hidden');
                 setTimeout(() => chatInput.focus(), 300);
             });
+
             closeChat.addEventListener('click', () => {
                 chatWindow.classList.add('hidden'); chatToggle.classList.remove('hidden');
             });
 
-            // Vẫn nạp lịch sử từ bộ nhớ (để giữ trí nhớ cho AI)
             let chatHistory = JSON.parse(localStorage.getItem('tanlap_pro_history')) || [];
             
             function scrollToBottom() {
@@ -527,12 +531,11 @@ const globalData = {
             }
 
             function renderHistory() {
-                // Luôn dọn sạch màn hình khi tải lại trang, chỉ in câu chào mặc định
                 chatMessages.innerHTML = `
                     <div class="flex items-start gap-2 mb-2">
                         <img src="/assets/logodoan.png" class="w-8 h-8 object-contain drop-shadow-logo mt-1 flex-shrink-0" />
                         <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed max-w-[85%]">
-                            Chào bạn! Hệ thống AI Địa phương số đã sẵn sàng. Bạn cần tìm hiểu thông tin hành chính, điểm đến hay thủ tục nào?
+                            Chào bạn! Hệ thống AI Địa phương số đã sẵn sàng. Bạn cần tìm hiểu thông tin nhân sự, hành chính hay điểm đến nào?
                         </div>
                     </div>`;
             }
@@ -559,7 +562,6 @@ const globalData = {
             function appendAIMsg(text, isTyping = false, id = '') {
                 const typingCursor = isTyping ? `<span class="w-2 h-4 bg-[#005bb5] animate-pulse inline-block align-middle ml-1 rounded-sm"></span>` : '';
                 const content = formatMarkdown(text) + typingCursor;
-                
                 const existingBubble = id ? document.getElementById(id) : null;
 
                 if (existingBubble) {
@@ -578,16 +580,14 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // THU THẬP TÊN NHÂN SỰ VÀ CHỨC DANH TỪ WEB ĐỂ BƠM CHO AI
-                let webContext = "DANH SÁCH NHÂN SỰ VÀ CHỨC VỤ THỰC TẾ:\n";
+                // THU THẬP TÊN NHÂN SỰ TỪ WEB ĐỂ BƠM CHO AI NHƯ MỘT BIẾN NGỮ CẢNH CỨNG (CHỐNG HALLUCINATION)
+                let webContext = "DANH SÁCH NHÂN SỰ VÀ CHỨC VỤ THỰC TẾ TRÊN WEB (NẾU KHÔNG CÓ TÊN Ở ĐÂY, VUI LÒNG TRẢ LỜI LÀ CHƯA CẬP NHẬT):\n";
                 if (typeof ASSETS !== 'undefined' && ASSETS.coQuanNhaNuoc) {
                     ASSETS.coQuanNhaNuoc.forEach(cq => {
                         if (cq.departments) {
                             cq.departments.forEach(dept => {
-                                // Lọc bỏ thẻ HTML để lấy chức danh phụ sạch sẽ (Bí thư, Phó CT...)
                                 let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ', ').trim();
-                                
-                                webContext += `* Cơ quan: ${cq.title} - Bộ phận: ${dept.name} - Cán bộ: ${dept.personName || 'Chưa cập nhật'} - Chức vụ kiêm nhiệm: ${cleanRoles}\n`;
+                                webContext += `* Cơ quan: ${cq.title} - Bộ phận: ${dept.name} - Cán bộ phụ trách: ${dept.personName || 'Chưa cập nhật'} - Chức vụ: ${cleanRoles}\n`;
                             });
                         }
                     });
@@ -601,8 +601,7 @@ const globalData = {
                 scrollToBottom();
 
                 const msgId = 'ai-msg-' + Date.now();
-                appendAIMsg('', true, msgId); 
-                
+                appendAIMsg('', true, msgId);
                 let aiFullResponse = "";
 
                 try {
@@ -611,7 +610,7 @@ const globalData = {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: message, history: chatHistory, webData: webContext }) 
                     });
-
+                    
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder("utf-8");
 
@@ -621,7 +620,6 @@ const globalData = {
                         
                         const chunk = decoder.decode(value, { stream: true });
                         const lines = chunk.split('\n');
-                        
                         for (const line of lines) {
                             if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                                 try {
@@ -642,12 +640,10 @@ const globalData = {
                     }
 
                     appendAIMsg(aiFullResponse, false, msgId);
-
                     chatHistory.push({ role: 'user', content: message });
                     chatHistory.push({ role: 'assistant', content: aiFullResponse });
                     if (chatHistory.length > 8) chatHistory = chatHistory.slice(chatHistory.length - 8);
                     localStorage.setItem('tanlap_pro_history', JSON.stringify(chatHistory));
-
                 } catch (error) {
                     console.error("Lỗi Fetch API:", error);
                     const existingBubble = document.getElementById(msgId);

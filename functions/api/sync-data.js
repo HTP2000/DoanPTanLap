@@ -14,10 +14,11 @@ export async function onRequest(context) {
             if (sheetRes.ok) {
                 const sheetData = await sheetRes.json();
                 sheetData.forEach((row, index) => {
+                    const textContent = `Câu hỏi/Thủ tục: ${row.question}. Hướng dẫn giải quyết: ${row.answer}`;
                     chunks.push({
                         id: `faq-${index}`,
-                        text: `Câu hỏi/Thủ tục: ${row.question}. Hướng dẫn giải quyết: ${row.answer}`,
-                        metadata: { type: "thutuc", source: "google_sheet" }
+                        text: textContent,
+                        metadata: { type: "thutuc", source: "google_sheet", text: textContent } // Đã thêm trường text vào metadata
                     });
                 });
             }
@@ -35,6 +36,9 @@ export async function onRequest(context) {
             if (sanityRes.ok) {
                 const sanityData = (await sanityRes.json()).result;
                 sanityData.forEach(item => {
+                    // Chặn các dữ liệu không hợp lệ/dữ liệu nháp (nếu có "Nguyễn Văn A" thì bỏ qua)
+                    if (item.title && item.title.includes("Nguyễn Văn A")) return;
+
                     let deptInfo = "";
                     if (item.departments) {
                         deptInfo = item.departments.map(d => {
@@ -43,10 +47,13 @@ export async function onRequest(context) {
                             return `- Bộ phận: ${d.name} | Cán bộ: ${d.personName || "Chưa rõ"} | Chức danh: ${rolesText}`;
                         }).join("\n");
                     }
+                    
+                    const textContent = `Cơ quan/Địa điểm: ${item.title}. Địa chỉ: ${item.address || "Chưa rõ"}. Mô tả: ${item.description || "Không có"}. \nDanh sách nhân sự cụ thể:\n${deptInfo}`;
+                    
                     chunks.push({
                         id: `sanity-${item._id}`,
-                        text: `Cơ quan/Địa điểm: ${item.title}. Địa chỉ: ${item.address || "Chưa rõ"}. Mô tả: ${item.description || "Không có"}. \nDanh sách nhân sự cụ thể:\n${deptInfo}`,
-                        metadata: { type: "diaphuong", source: "sanity" }
+                        text: textContent,
+                        metadata: { type: "diaphuong", source: "sanity", text: textContent } // Đã thêm trường text vào metadata
                     });
                 });
             }
