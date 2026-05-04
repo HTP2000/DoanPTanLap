@@ -26,7 +26,7 @@ export async function onRequestPost(context) {
             if (cachedStr) {
                 try {
                     const cachedData = JSON.parse(cachedStr);
-                    // Nếu đã có, bot sẽ trả lời ngay lập tức, không tốn tiền gọi AI
+                    // Nếu đã có, bot sẽ trả lời ngay lập tức
                     return new Response(`data: {"response": ${JSON.stringify(cachedData.answer)}}\n\ndata: [DONE]\n\n`, {
                         headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" }
                     });
@@ -39,11 +39,13 @@ export async function onRequestPost(context) {
         const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 5, returnMetadata: true });
         const retrievedContext = vectorMatches.matches?.map(m => m.metadata?.text || "").filter(t => t !== "").join('\n\n') || "";
 
+        // THÊM QUY TẮC ĐỊNH DẠNG (IN ĐẬM, VIẾT HOA) VÀO NÃO AI
         const systemPrompt = `Bạn là Trợ lý AI của Đoàn Phường Tân Lập.
 QUY TẮC TRÍCH XUẤT DỮ LIỆU NGHIÊM NGẶT:
 1. ƯU TIÊN SỐ 1: Tìm thông tin trong mục [DỮ LIỆU TỪ WEB].
 2. ƯU TIÊN SỐ 2: Nếu không có, tìm trong [DỮ LIỆU TỪ GOOGLE SHEET/HỆ THỐNG].
-3. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt tên người hoặc chức vụ. Nếu không có dữ liệu, hãy nói là chưa cập nhật.
+3. QUY TẮC TRÌNH BÀY: Khi trả lời tên Cán Bộ và Chức Vụ, bạn PHẢI IN ĐẬM VÀ VIẾT HOA TOÀN BỘ (Ví dụ: **TRẦN THỊ THÙY TRANG - BÍ THƯ ĐOÀN PHƯỜNG** hoặc **HOÀNG XUÂN TÚ - CHỦ TỊCH HỘI CỰU CHIẾN BINH**).
+4. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt tên người hoặc chức vụ. Nếu không có dữ liệu, hãy nói là chưa cập nhật.
 
 [DỮ LIỆU TỪ WEB (ƯU TIÊN 1)]:
 ${webData}

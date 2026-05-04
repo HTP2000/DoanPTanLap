@@ -60,7 +60,7 @@ const globalData = {
         'Thông Tin Nhanh Chóng - Tiện Ích', 
         'Chuyển Đổi Số - Phục Vụ Nhân Dân', 
     ],
-    footerText: "Công trình Địa Phương Số"
+    footerText: "Công Trình Địa Phương Số"
 };
 ---
 
@@ -176,7 +176,7 @@ const globalData = {
     <script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script is:inline src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
 
-    <!-- THẺ SCRIPT 1: TRUYỀN DỮ LIỆU SANITY RA NGOÀI -->
+    <!-- THẺ SCRIPT 1: HIỂN THỊ GIAO DIỆN WEB -->
     <script is:inline define:vars={{ coQuanData, vanHoaData, tdpData, globalData }}>
         const ASSETS = {
             global: globalData,
@@ -184,9 +184,6 @@ const globalData = {
             diemVanHoa: vanHoaData,
             diemHoiTruong: tdpData
         };
-
-        // BẢN VÁ LỖI CỰC KỲ QUAN TRỌNG: Đưa dữ liệu ra Window để Script Chatbot đọc được
-        window.SHARED_ASSETS = ASSETS;
 
         const departmentData = {};
         ASSETS.coQuanNhaNuoc.forEach(item => {
@@ -511,8 +508,8 @@ const globalData = {
         </div>
     </div>
 
-    <!-- THẺ SCRIPT 2: XỬ LÝ CHATBOT -->
-    <script is:inline>
+    <!-- THẺ SCRIPT 2: XỬ LÝ CHATBOT (BẢN VÁ: NHÚNG TRỰC TIẾP DỮ LIỆU BẰNG DEFINE:VARS) -->
+    <script is:inline define:vars={{ coQuanData }}>
         document.addEventListener('DOMContentLoaded', () => {
             const chatToggle = document.getElementById('chat-toggle');
             const chatWindow = document.getElementById('chat-window');
@@ -586,18 +583,16 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // THU THẬP TÊN NHÂN SỰ TỪ WEB (ĐỌC TỪ BIẾN WINDOW.SHARED_ASSETS) ĐỂ BƠM CHO AI
+                // THU THẬP TÊN NHÂN SỰ TỪ BIẾN ĐƯỢC NHÚNG TRỰC TIẾP TỪ ASTRO
                 let webContext = "THÔNG TIN CƠ CẤU TỔ CHỨC VÀ NHÂN SỰ CHÍNH XÁC NHẤT (Nếu không có tên trong danh sách này, vui lòng trả lời là chưa cập nhật):\n";
-                if (window.SHARED_ASSETS && window.SHARED_ASSETS.coQuanNhaNuoc) {
-                    window.SHARED_ASSETS.coQuanNhaNuoc.forEach(cq => {
+                if (coQuanData) {
+                    coQuanData.forEach(cq => {
                         if (cq.departments) {
                             cq.departments.forEach(dept => {
-                                // Lọc sạch thẻ HTML và thay bằng dấu phẩy để AI dễ đọc
                                 let cleanRoles = (dept.rolesHtml || '')
                                     .replace(/<\/div>/g, ', ') 
                                     .replace(/<[^>]*>?/gm, '')
                                     .trim();
-                                // Xóa dấu phẩy, khoảng trắng thừa ở cuối nếu có
                                 cleanRoles = cleanRoles.replace(/,\s*$/, "");
                                 
                                 webContext += `\n* Cơ quan: ${cq.title} - Phòng ban/Tổ chức: ${dept.name}\n`;
