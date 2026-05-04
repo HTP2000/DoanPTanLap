@@ -15,18 +15,16 @@ export async function onRequestPost(context) {
     const { message, history = [], webData = "" } = body;
 
     try {
-        // 1. TẠO MÃ KHÓA TỪ CÂU HỎI ĐỂ TÌM TRONG KV
         const cacheInput = message.toLowerCase().trim();
         const cacheKey = "qa_" + await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheInput))
             .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('').substring(0, 16));
 
-        // 2. KIỂM TRA XEM CÂU TRẢ LỜI ĐÃ CÓ TRONG Ổ CỨNG CHƯA
+        // 1. Kiểm tra bộ nhớ KV
         if (env.QA_DB) {
             const cachedStr = await env.QA_DB.get(cacheKey);
             if (cachedStr) {
                 try {
                     const cachedData = JSON.parse(cachedStr);
-                    // Nếu đã có, bot sẽ trả lời ngay lập tức
                     return new Response(`data: {"response": ${JSON.stringify(cachedData.answer)}}\n\ndata: [DONE]\n\n`, {
                         headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" }
                     });
@@ -34,18 +32,22 @@ export async function onRequestPost(context) {
             }
         }
 
-        // 3. NẾU CHƯA CÓ, TIẾN HÀNH HỎI AI
+        // 2. Tìm kiếm Vector
         const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
         const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 5, returnMetadata: true });
         const retrievedContext = vectorMatches.matches?.map(m => m.metadata?.text || "").filter(t => t !== "").join('\n\n') || "";
 
-        // THÊM QUY TẮC ĐỊNH DẠNG (IN ĐẬM, VIẾT HOA) VÀO NÃO AI
+        // 3. Prompt thiết quân luật
         const systemPrompt = `Bạn là Trợ lý AI của Đoàn Phường Tân Lập.
-QUY TẮC TRÍCH XUẤT DỮ LIỆU NGHIÊM NGẶT:
+QUY TẮC TRÍCH XUẤT DỮ LIỆU VÀ TRÌNH BÀY NGHIÊM NGẶT:
 1. ƯU TIÊN SỐ 1: Tìm thông tin trong mục [DỮ LIỆU TỪ WEB].
 2. ƯU TIÊN SỐ 2: Nếu không có, tìm trong [DỮ LIỆU TỪ GOOGLE SHEET/HỆ THỐNG].
-3. QUY TẮC TRÌNH BÀY: Khi trả lời tên Cán Bộ và Chức Vụ, bạn PHẢI IN ĐẬM VÀ VIẾT HOA TOÀN BỘ (Ví dụ: **TRẦN THỊ THÙY TRANG - BÍ THƯ ĐOÀN PHƯỜNG** hoặc **HOÀNG XUÂN TÚ - CHỦ TỊCH HỘI CỰU CHIẾN BINH**).
-4. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt tên người hoặc chức vụ. Nếu không có dữ liệu, hãy nói là chưa cập nhật.
+3. CÁCH XƯNG HÔ VÀ TRÌNH BÀY:
+   - TUYỆT ĐỐI KHÔNG dùng các cụm từ mở đầu như "Theo thông tin trên web", "Dựa vào dữ liệu". Hãy trả lời trực tiếp, tự nhiên.
+   - BẮT BUỘC thêm từ "đồng chí" trước họ và tên của cán bộ.
+   - BẮT BUỘC IN ĐẬM VÀ VIẾT HOA tên và chức vụ (Ví dụ: đồng chí **TRẦN THỊ THÙY TRANG - BÍ THƯ ĐOÀN PHƯỜNG**).
+   - Khi được hỏi về ĐỊA CHỈ / NƠI LÀM VIỆC của một người, hãy sử dụng thông tin "Địa chỉ cơ quan" kết hợp với "Phòng làm việc cụ thể".
+4. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt tên người, chức vụ hay địa chỉ. Nếu không có dữ liệu, hãy nói "Hiện tại hệ thống chưa cập nhật thông tin này".
 
 [DỮ LIỆU TỪ WEB (ƯU TIÊN 1)]:
 ${webData}
@@ -67,14 +69,22 @@ ${retrievedContext}`;
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
-                        // 4. SAU KHI AI TRẢ LỜI XONG, LƯU VÀO Ổ CỨNG KV
-                        if (fullAnswer.length > 5 && env.QA_DB) {
-                            const dataToSave = {
-                                question: message,
-                                answer: fullAnswer,
-                                timestamp: new Date().toISOString()
-                            };
-                            await env.QA_DB.put(cacheKey, JSON.stringify(dataToSave));
+                        if (fullAnswer.length > 5) {
+                            // Lưu vào Admin KV
+                            if (env.QA_DB) {
+                                const dataToSave = { question: message, answer: fullAnswer, timestamp: new Date().toISOString() };
+                                await env.QA_DB.put(cacheKey, JSON.stringify(dataToSave));
+                            }
+
+                            // Bắn sang Google Sheet
+                            const GOOGLE_SHEET_URL = "DÁN_LINK_GOOGLE_SCRIPT_CỦA_BẠN_VÀO_ĐÂY"; 
+                            if (GOOGLE_SHEET_URL.startsWith("https://script.google.com/macros/s/AKfycbzdXsWZTPMv0fxXnDbRWyqUCD9AahcWcoEQG6n3TCIpMux_aMcJD0Y5t0Z-xyH5NYMA/exec")) {
+                                fetch(GOOGLE_SHEET_URL, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ question: message, answer: fullAnswer })
+                                }).catch(e => console.error("Lỗi gửi lên Sheet:", e));
+                            }
                         }
                         writer.close(); break;
                     }

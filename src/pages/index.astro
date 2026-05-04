@@ -204,7 +204,6 @@ const globalData = {
         };
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Mobile Menu
             const mobileBtn = document.getElementById('mobile-menu-btn');
             const mobileIcon = document.getElementById('mobile-menu-icon');
             const mobileMenu = document.getElementById('mobile-menu');
@@ -239,7 +238,6 @@ const globalData = {
             document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
             document.getElementById('app-footer').innerText = ASSETS.global.footerText;
 
-            // Render Mục 1: Cơ quan nhà nước
             const nhaNuocContainer = document.getElementById('nhanuoc-list');
             ASSETS.coQuanNhaNuoc.forEach((item, index) => {
                 const t = themeColors[item.theme] || themeColors.blue;
@@ -267,7 +265,6 @@ const globalData = {
                     </div>`;
             });
 
-            // Render Mục 2: Điểm Văn Hóa
             const vanHoaContainer = document.getElementById('vanhoa-list');
             ASSETS.diemVanHoa.forEach((item, index) => {
                 vanHoaContainer.innerHTML += `
@@ -288,7 +285,6 @@ const globalData = {
                     </div>`;
             });
 
-            // Render Mục 3: Hội trường
             const hoiTruongContainer = document.getElementById('hoitruong-list');
             ASSETS.diemHoiTruong.forEach((item, index) => {
                 let delay = (index % 3) * 100; 
@@ -508,7 +504,7 @@ const globalData = {
         </div>
     </div>
 
-    <!-- THẺ SCRIPT 2: XỬ LÝ CHATBOT (BẢN VÁ: NHÚNG TRỰC TIẾP DỮ LIỆU BẰNG DEFINE:VARS) -->
+    <!-- THẺ SCRIPT 2: XỬ LÝ CHATBOT VÀ BƠM THÊM ĐỊA CHỈ TỔ CHỨC LỚN -->
     <script is:inline define:vars={{ coQuanData }}>
         document.addEventListener('DOMContentLoaded', () => {
             const chatToggle = document.getElementById('chat-toggle');
@@ -583,8 +579,7 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // THU THẬP TÊN NHÂN SỰ TỪ BIẾN ĐƯỢC NHÚNG TRỰC TIẾP TỪ ASTRO
-                let webContext = "THÔNG TIN CƠ CẤU TỔ CHỨC VÀ NHÂN SỰ CHÍNH XÁC NHẤT (Nếu không có tên trong danh sách này, vui lòng trả lời là chưa cập nhật):\n";
+                let webContext = "THÔNG TIN CƠ CẤU TỔ CHỨC, NHÂN SỰ VÀ ĐỊA CHỈ NƠI LÀM VIỆC CHÍNH XÁC NHẤT:\n";
                 if (coQuanData) {
                     coQuanData.forEach(cq => {
                         if (cq.departments) {
@@ -595,7 +590,9 @@ const globalData = {
                                     .trim();
                                 cleanRoles = cleanRoles.replace(/,\s*$/, "");
                                 
-                                webContext += `\n* Cơ quan: ${cq.title} - Phòng ban/Tổ chức: ${dept.name}\n`;
+                                webContext += `\n* Thuộc Cơ quan/Tổ chức lớn: ${cq.title} (Địa chỉ cơ quan: ${cq.address || 'Đang cập nhật'})\n`;
+                                webContext += `  - Phòng ban trực thuộc: ${dept.name}\n`;
+                                webContext += `  - Phòng làm việc cụ thể: ${dept.address || 'Đang cập nhật'}\n`;
                                 webContext += `  - Cán bộ phụ trách: ${dept.personName || 'Đang cập nhật'}\n`;
                                 webContext += `  - Chức danh/Chức vụ: ${cleanRoles}\n`;
                             });
