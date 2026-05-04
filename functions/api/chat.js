@@ -1,7 +1,6 @@
 export async function onRequestPost(context) {
     const { request, env, waitUntil } = context;
     
-    // Xử lý CORS an toàn
     if (request.method === "OPTIONS") {
         return new Response(null, {
             headers: {
@@ -16,33 +15,35 @@ export async function onRequestPost(context) {
     const { message, history = [], webData = "" } = body;
 
     try {
-        // Mã Cache
-        const cacheInput = message.toLowerCase().trim() + webData;
-        const cacheKey = "v2_" + await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheInput))
-            .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('').substring(0, 32));
+        // 1. TẠO MÃ KHÓA TỪ CÂU HỎI ĐỂ TÌM TRONG KV
+        const cacheInput = message.toLowerCase().trim();
+        const cacheKey = "qa_" + await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheInput))
+            .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('').substring(0, 16));
 
-        const cached = await env.RAG_CACHE.get(cacheKey);
-        if (cached) {
-            return new Response(`data: {"response": ${JSON.stringify(cached)}}\n\ndata: [DONE]\n\n`, {
-                headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" }
-            });
+        // 2. KIỂM TRA XEM CÂU TRẢ LỜI ĐÃ CÓ TRONG Ổ CỨNG CHƯA
+        if (env.QA_DB) {
+            const cachedStr = await env.QA_DB.get(cacheKey);
+            if (cachedStr) {
+                try {
+                    const cachedData = JSON.parse(cachedStr);
+                    // Nếu đã có, bot sẽ trả lời ngay lập tức, không tốn tiền gọi AI
+                    return new Response(`data: {"response": ${JSON.stringify(cachedData.answer)}}\n\ndata: [DONE]\n\n`, {
+                        headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" }
+                    });
+                } catch(e) { console.error("Lỗi đọc Cache KV"); }
+            }
         }
 
+        // 3. NẾU CHƯA CÓ, TIẾN HÀNH HỎI AI
         const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
         const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 5, returnMetadata: true });
-        
-        // Lấy dữ liệu từ Vector (Google Sheet + Sanity cũ)
         const retrievedContext = vectorMatches.matches?.map(m => m.metadata?.text || "").filter(t => t !== "").join('\n\n') || "";
 
-        // PROMPT THIẾT QUÂN LUẬT: ƯU TIÊN WEB LÊN HÀNG ĐẦU
         const systemPrompt = `Bạn là Trợ lý AI của Đoàn Phường Tân Lập.
 QUY TẮC TRÍCH XUẤT DỮ LIỆU NGHIÊM NGẶT:
-Khi trả lời người dùng, bạn PHẢI tuân thủ thứ tự tìm kiếm dữ liệu sau đây:
-
-1. BƯỚC 1 (ƯU TIÊN TỐI ĐA): Tìm thông tin trong mục [DỮ LIỆU TỪ WEB]. Đây là nguồn chính xác tuyệt đối về cơ cấu tổ chức, phòng ban, họ và tên cán bộ, chức vụ hiện tại. 
-2. BƯỚC 2: Nếu Bước 1 KHÔNG CÓ thông tin, bạn mới được phép tìm trong mục [DỮ LIỆU TỪ GOOGLE SHEET/HỆ THỐNG] (thường là các hướng dẫn, thủ tục hành chính).
-3. BƯỚC 3: Nếu cả 2 nguồn trên đều không có thông tin khớp với câu hỏi, bạn PHẢI trả lời: "Hiện tại hệ thống chưa cập nhật thông tin này."
-4. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt tên người (VD: Nguyễn Văn A, Trần Thị B) hoặc chức vụ. Trả lời ngắn gọn, lịch sự.
+1. ƯU TIÊN SỐ 1: Tìm thông tin trong mục [DỮ LIỆU TỪ WEB].
+2. ƯU TIÊN SỐ 2: Nếu không có, tìm trong [DỮ LIỆU TỪ GOOGLE SHEET/HỆ THỐNG].
+3. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt tên người hoặc chức vụ. Nếu không có dữ liệu, hãy nói là chưa cập nhật.
 
 [DỮ LIỆU TỪ WEB (ƯU TIÊN 1)]:
 ${webData}
@@ -64,7 +65,15 @@ ${retrievedContext}`;
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
-                        if (fullAnswer.length > 5) await env.RAG_CACHE.put(cacheKey, fullAnswer, { expirationTtl: 259200 });
+                        // 4. SAU KHI AI TRẢ LỜI XONG, LƯU VÀO Ổ CỨNG KV
+                        if (fullAnswer.length > 5 && env.QA_DB) {
+                            const dataToSave = {
+                                question: message,
+                                answer: fullAnswer,
+                                timestamp: new Date().toISOString()
+                            };
+                            await env.QA_DB.put(cacheKey, JSON.stringify(dataToSave));
+                        }
                         writer.close(); break;
                     }
                     writer.write(value);

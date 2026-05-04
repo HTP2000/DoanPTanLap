@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Lịch sử Bot AI</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f7f6; padding: 20px; max-width: 800px; margin: auto; }
+        .card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .question { font-weight: bold; color: #005bb5; font-size: 16px; margin-bottom: 8px; }
+        .answer { color: #333; font-size: 14px; background: #f9f9f9; padding: 10px; border-radius: 5px; }
+        .btn-delete { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        .btn-delete:hover { background: #c0392b; }
+        .time { font-size: 12px; color: #999; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h2 style="color: #005bb5;">Lịch sử câu trả lời của AI</h2>
+    <p>Nếu bot trả lời sai, hãy bấm "XÓA". Lần tới khách hỏi lại, bot sẽ đọc lại dữ liệu để cập nhật câu trả lời mới.</p>
+    <div id="app">Đang tải dữ liệu...</div>
+
+    <script>
+        async function loadData() {
+            const res = await fetch('/api/admin-qa?action=list');
+            const data = await res.json();
+            const app = document.getElementById('app');
+            
+            if (data.length === 0) {
+                app.innerHTML = '<p>Chưa có dữ liệu lịch sử nào.</p>';
+                return;
+            }
+
+            app.innerHTML = data.map(item => `
+                <div class="card" id="${item.key}">
+                    <div class="time">${new Date(item.timestamp).toLocaleString('vi-VN')}</div>
+                    <div class="question">Hỏi: ${item.question}</div>
+                    <div class="answer">${item.answer}</div>
+                    <button class="btn-delete" onclick="deleteItem('${item.key}')">🗑️ Xóa bộ nhớ câu này</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteItem(key) {
+            if (!confirm("Xóa câu này khỏi bộ nhớ bot?")) return;
+            await fetch(`/api/admin-qa?action=delete&key=${key}`);
+            document.getElementById(key).style.display = 'none';
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

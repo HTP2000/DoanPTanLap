@@ -384,7 +384,7 @@ const globalData = {
                 if (!data) return;
 
                 modalTitle.textContent = data.title;
-                modalSubtitle.textContent = "Thông chi tiết di tích / điểm văn hóa";
+                modalSubtitle.textContent = "Thông tin chi tiết di tích / điểm văn hóa";
                 modalList.className = "flex flex-col gap-6 pb-6";
                 
                 let galleryHTML = (data.gallery && data.gallery.length > 0) ? `
@@ -493,7 +493,8 @@ const globalData = {
         </div>
 
         <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#f8f9fa] flex flex-col gap-4 text-sm custom-scrollbar pb-6 scroll-smooth">
-            </div>
+            <!-- Tin nhắn sẽ hiển thị ở đây -->
+        </div>
 
         <div class="p-3 bg-white border-t border-gray-100 z-10">
             <div class="relative flex items-center">
@@ -580,18 +581,28 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // THU THẬP TÊN NHÂN SỰ TỪ WEB ĐỂ BƠM CHO AI NHƯ MỘT BIẾN NGỮ CẢNH CỨNG (CHỐNG HALLUCINATION)
-                let webContext = "DANH SÁCH NHÂN SỰ VÀ CHỨC VỤ THỰC TẾ TRÊN WEB (NẾU KHÔNG CÓ TÊN Ở ĐÂY, VUI LÒNG TRẢ LỜI LÀ CHƯA CẬP NHẬT):\n";
+                // THU THẬP TÊN NHÂN SỰ TỪ WEB ĐỂ BƠM CHO AI NHƯ MỘT BIẾN NGỮ CẢNH CỨNG
+                let webContext = "THÔNG TIN CƠ CẤU TỔ CHỨC VÀ NHÂN SỰ CHÍNH XÁC NHẤT (Nếu không có tên trong danh sách này, vui lòng trả lời là chưa cập nhật):\n";
                 if (typeof ASSETS !== 'undefined' && ASSETS.coQuanNhaNuoc) {
                     ASSETS.coQuanNhaNuoc.forEach(cq => {
                         if (cq.departments) {
                             cq.departments.forEach(dept => {
-                                let cleanRoles = (dept.rolesHtml || '').replace(/<[^>]*>?/gm, ', ').trim();
-                                webContext += `* Cơ quan: ${cq.title} - Bộ phận: ${dept.name} - Cán bộ phụ trách: ${dept.personName || 'Chưa cập nhật'} - Chức vụ: ${cleanRoles}\n`;
+                                // Lọc sạch thẻ HTML và thay bằng dấu phẩy để AI dễ đọc
+                                let cleanRoles = (dept.rolesHtml || '')
+                                    .replace(/<\/div>/g, ', ') 
+                                    .replace(/<[^>]*>?/gm, '')
+                                    .trim();
+                                // Xóa dấu phẩy, khoảng trắng thừa ở cuối nếu có
+                                cleanRoles = cleanRoles.replace(/,\s*$/, "");
+                                
+                                webContext += `\n* Cơ quan: ${cq.title} - Phòng ban/Tổ chức: ${dept.name}\n`;
+                                webContext += `  - Cán bộ phụ trách: ${dept.personName || 'Đang cập nhật'}\n`;
+                                webContext += `  - Chức danh/Chức vụ: ${cleanRoles}\n`;
                             });
                         }
                     });
                 }
+                console.log("=== DỮ LIỆU ĐANG BƠM CHO AI ===", webContext);
 
                 chatInput.value = '';
                 chatInput.disabled = true;
