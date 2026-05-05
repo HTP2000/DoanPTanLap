@@ -16,20 +16,20 @@ export async function onRequestPost(context) {
         const { message, history = [], webData = "" } = body;
 
         const cacheInput = message.toLowerCase().trim();
-        const cacheKey = "qa_" + await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheInput))
-            .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('').substring(0, 16));
+        const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheInput));
+        const cacheKey = "qa_" + Array.from(new Uint8Array(hashBuffer)).map(x => x.toString(16).padStart(2, '0')).join('').substring(0, 16);
 
-        // 1. Kiểm tra bộ nhớ KV
+        // 1. Kiểm tra Admin KV
         if (env.QA_DB) {
-            const cachedStr = await env.QA_DB.get(cacheKey);
-            if (cachedStr) {
-                try {
+            try {
+                const cachedStr = await env.QA_DB.get(cacheKey);
+                if (cachedStr) {
                     const cachedData = JSON.parse(cachedStr);
                     return new Response(`data: {"response": ${JSON.stringify(cachedData.answer)}}\n\ndata: [DONE]\n\n`, {
                         headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" }
                     });
-                } catch(e) { console.error("Lỗi đọc Cache KV"); }
-            }
+                }
+            } catch(e) {}
         }
 
         // 2. Tìm kiếm Vector
@@ -39,7 +39,7 @@ export async function onRequestPost(context) {
                 const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
                 const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 5, returnMetadata: true });
                 retrievedContext = vectorMatches.matches?.map(m => m.metadata?.text || "").filter(t => t !== "").join('\n\n') || "";
-            } catch(e) { console.error("Lỗi Vector:", e); }
+            } catch(e) {}
         }
 
         // 3. Prompt thiết quân luật
@@ -70,6 +70,7 @@ ${retrievedContext}`;
 
         waitUntil((async () => {
             let fullAnswer = "";
+            let buffer = ""; // BỘ ĐỆM XỬ LÝ ĐỨT GÃY STREAM CHO SERVER
             try {
                 while (true) {
                     const { done, value } = await reader.read();
@@ -79,22 +80,22 @@ ${retrievedContext}`;
                                 if (env.QA_DB) {
                                     await env.QA_DB.put(cacheKey, JSON.stringify({ question: message, answer: fullAnswer, timestamp: new Date().toISOString() }));
                                 }
-                                
-                                // ĐÃ GẮN SẴN ĐƯỜNG LINK GOOGLE SCRIPT CỦA BẠN VÀO ĐÂY:
                                 const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzdXsWZTPMv0fxXnDbRWyqUCD9AahcWcoEQG6n3TCIpMux_aMcJD0Y5t0Z-xyH5NYMA/exec"; 
-                                
-                                if (GOOGLE_SHEET_URL.startsWith("https://")) {
-                                    fetch(GOOGLE_SHEET_URL, {
-                                        method: "POST", headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ question: message, answer: fullAnswer })
-                                    }).catch(e => console.error("Lỗi gửi Sheet:", e));
-                                }
-                            } catch(err) { console.error("Lỗi lưu trữ:", err); }
+                                fetch(GOOGLE_SHEET_URL, {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ question: message, answer: fullAnswer })
+                                }).catch(e => {});
+                            } catch(err) {}
                         }
                         writer.close(); break;
                     }
                     writer.write(value);
-                    const lines = decoder.decode(value).split('\n');
+                    
+                    // Ráp nối các mảnh vỡ
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Giữ lại mảnh vỡ ở cuối chờ lượt sau
+                    
                     for (const line of lines) {
                         if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                             try { fullAnswer += JSON.parse(line.replace('data: ', '')).response; } catch(e) {}
@@ -107,7 +108,6 @@ ${retrievedContext}`;
         return new Response(readable, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
 
     } catch (error) {
-        // Trả về lỗi an toàn để giao diện không bị sập (sẽ in màu đỏ lên khung chat nếu có lỗi thay vì trắng bóc)
         const errorMsg = JSON.stringify("⚠️ Máy chủ gặp sự cố: " + (error.message || "Lỗi không xác định"));
         return new Response(`data: {"response": ${errorMsg}}\n\ndata: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
     }
