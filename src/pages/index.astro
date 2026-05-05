@@ -173,6 +173,290 @@ const globalData = {
         </div>
     </div>
 
+    <script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script is:inline src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+
+    <!-- THẺ SCRIPT 1: HIỂN THỊ GIAO DIỆN WEB -->
+    <script is:inline define:vars={{ coQuanData, vanHoaData, tdpData, globalData }}>
+        const ASSETS = {
+            global: globalData,
+            coQuanNhaNuoc: coQuanData,
+            diemVanHoa: vanHoaData,
+            diemHoiTruong: tdpData
+        };
+
+        const departmentData = {};
+        ASSETS.coQuanNhaNuoc.forEach(item => {
+            departmentData[item.id] = { 
+                title: item.title, 
+                departments: item.departments, 
+                theme: item.theme,
+                unitLabel: item.unitLabel || "Đồng chí",
+                roomLabel: item.roomLabel || "Tầng / Phòng"
+            };
+        });
+
+        const themeColors = {
+            blue: { text: 'text-blue-600', bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
+            red: { text: 'text-red-600', bg: 'bg-red-50', badge: 'bg-red-100 text-red-700' },
+            green: { text: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
+            yellow: { text: 'text-amber-600', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700' }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Mobile Menu
+            const mobileBtn = document.getElementById('mobile-menu-btn');
+            const mobileIcon = document.getElementById('mobile-menu-icon');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileLinks = document.querySelectorAll('.mobile-link');
+
+            mobileBtn.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.contains('hidden');
+                if(isHidden) {
+                    mobileMenu.classList.remove('hidden');
+                    mobileMenu.classList.add('flex');
+                    mobileIcon.classList.remove('fa-bars');
+                    mobileIcon.classList.add('fa-xmark'); 
+                } else {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.classList.remove('flex');
+                    mobileIcon.classList.remove('fa-xmark');
+                    mobileIcon.classList.add('fa-bars'); 
+                }
+            });
+
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.classList.remove('flex');
+                    mobileIcon.classList.remove('fa-xmark');
+                    mobileIcon.classList.add('fa-bars');
+                });
+            });
+
+            document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
+            document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
+            document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
+            document.getElementById('app-footer').innerText = ASSETS.global.footerText;
+
+            // Render Mục 1: Cơ quan nhà nước
+            const nhaNuocContainer = document.getElementById('nhanuoc-list');
+            ASSETS.coQuanNhaNuoc.forEach((item, index) => {
+                const t = themeColors[item.theme] || themeColors.blue;
+                nhaNuocContainer.innerHTML += `
+                    <div class="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col h-full transform hover:-translate-y-2 cursor-pointer" data-aos="fade-up" data-aos-delay="${(index+1)*100}" onclick="openModal('${item.id}', 'nhanuoc')">
+                        <div class="relative h-48 sm:h-56 overflow-hidden bg-slate-100">
+                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Hình+ảnh';">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+                            <h3 class="absolute bottom-4 left-4 right-4 text-white font-bold text-xl drop-shadow-md leading-tight">${item.title}</h3>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col relative">
+                            <div class="absolute top-0 right-4 w-12 h-12 rounded-full ${t.bg} ${t.text} flex items-center justify-center -translate-y-1/2 shadow-sm border-4 border-white group-hover:rotate-12 transition-transform">
+                                <i class="fa-solid fa-building text-lg"></i>
+                            </div>
+                            <p class="text-slate-600 text-sm flex-1 mb-4 mt-2 line-clamp-3">${item.description || ''}</p>
+                            ${item.address ? `
+                            <a href="${item.mapLink || '#'}" target="_blank" onclick="event.stopPropagation()" class="mt-auto bg-slate-50 hover:bg-slate-100 p-3 rounded-2xl flex items-center gap-3 transition-colors group/map">
+                                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-red-500 shadow-sm group-hover/map:bg-red-500 group-hover/map:text-white transition-colors">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                </div>
+                                <span class="text-xs font-medium text-slate-700 flex-1 truncate">${item.address}</span>
+                                <i class="fa-solid fa-arrow-right text-slate-400 group-hover/map:text-red-500 group-hover/map:translate-x-1 transition-all"></i>
+                            </a>` : ''}
+                        </div>
+                    </div>`;
+            });
+
+            // Render Mục 2: Điểm Văn Hóa
+            const vanHoaContainer = document.getElementById('vanhoa-list');
+            ASSETS.diemVanHoa.forEach((item, index) => {
+                vanHoaContainer.innerHTML += `
+                    <div class="group flex flex-col sm:flex-row bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 transform hover:-translate-y-2 cursor-pointer" data-aos="fade-up" data-aos-delay="${(index+1)*100}" onclick="openModal('${item.id}', 'vanhoa')">
+                        <div class="sm:w-2/5 h-56 sm:h-auto relative overflow-hidden bg-slate-100 shrink-0">
+                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" onerror="this.onerror=null;this.src='https://placehold.co/600x800/e2e8f0/64748b?text=Ảnh+Minh+Hoạ';">
+                            <div class="absolute inset-0 bg-brand-blue/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        </div>
+                        <div class="p-6 flex-1 flex flex-col justify-center">
+                            <div class="inline-block px-3 py-1 bg-brand-light text-brand-blue rounded-full text-xs font-bold mb-3 w-max">Điểm Di Tích / Văn Hóa</div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-brand-blue transition-colors">${item.title}</h3>
+                            <p class="text-slate-600 text-sm mb-4 line-clamp-3">${item.description}</p>
+                            <a href="${item.mapLink}" target="_blank" onclick="event.stopPropagation()" class="mt-auto inline-flex items-center gap-2 text-sm text-brand-blue font-semibold hover:text-brand-dark group/link">
+                                <i class="fa-solid fa-map-location-dot"></i> Xem trên bản đồ
+                                <i class="fa-solid fa-arrow-right-long opacity-0 -ml-2 group-hover/link:opacity-100 group-hover/link:ml-1 transition-all"></i>
+                            </a>
+                        </div>
+                    </div>`;
+            });
+
+            // Render Mục 3: Hội trường
+            const hoiTruongContainer = document.getElementById('hoitruong-list');
+            ASSETS.diemHoiTruong.forEach((item, index) => {
+                let delay = (index % 3) * 100; 
+                hoiTruongContainer.innerHTML += `
+                    <a href="${item.mapLink}" target="_blank" class="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col hover:shadow-lg hover:shadow-blue-900/10 hover:-translate-y-2 hover:border-brand-blue/30 transition-all duration-300 cursor-pointer group" data-aos="fade-up" data-aos-delay="${delay}">
+                        <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-blue-50/70 rounded-bl-full -z-0 group-hover:scale-125 transition-transform duration-500"></div>
+                        <div class="relative z-10 flex flex-col h-full">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-light text-brand-blue rounded-full text-[10px] sm:text-xs font-semibold mb-3 sm:mb-4 w-fit">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>${item.badge}</span>
+                            </div>
+                            <div class="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm">
+                                <i class="fa-solid fa-location-dot text-slate-400 mt-1 w-3 sm:w-4 text-center"></i>
+                                <div><span class="text-slate-500 block text-[10px] sm:text-[11px] mb-0.5 uppercase tracking-wide">Địa chỉ:</span><span class="text-slate-800 font-medium">${item.address}</span></div>
+                            </div>
+                        </div>
+                    </a>`;
+            });
+
+            new Typed('#typed-subtitle', {
+                strings: ASSETS.global.subtitles,
+                typeSpeed: 60, backSpeed: 30, backDelay: 2500, loop: true
+            });
+
+            AOS.init({ duration: 800, once: true, offset: 50 });
+        });
+
+        // XỬ LÝ MODAL CHI TIẾT
+        const modal = document.getElementById('departmentModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalSubtitle = document.getElementById('modalSubtitle');
+        const modalList = document.getElementById('modalList');
+
+        window.openModal = function(itemId, type) {
+            modalList.innerHTML = '';
+            if (type === 'nhanuoc') {
+                const data = departmentData[itemId];
+                if (!data) return;
+                
+                modalTitle.textContent = data.title;
+                modalSubtitle.textContent = "Sơ đồ các phòng ban & Cán bộ phụ trách";
+                modalList.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-6";
+
+                (data.departments || []).forEach((dept, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer hover:border-brand-blue/30';
+                    
+                    let nColor = dept.nameColor || 'text-brand-blue';
+                    let nWeight = dept.nameWeight || 'font-bold';
+                    let nStyle = dept.nameStyle || 'not-italic';
+                    let nSize = dept.nameSize || 'text-base';
+
+                    let rColor = dept.roleColor || 'text-slate-500';
+                    let rWeight = dept.roleWeight || 'font-normal';
+                    let rStyle = dept.roleStyle || 'italic';
+                    let rSize = dept.roleSize || 'text-xs';
+
+                    let nameHtml = dept.personName 
+                        ? `<span class="${nColor} ${nWeight} ${nStyle} ${nSize} uppercase block mb-1">${dept.personName}</span>` 
+                        : '';
+                    let rolesHtml = dept.rolesHtml || '';
+
+                    card.innerHTML = `
+                        <div class="absolute top-0 left-0 w-1 h-full bg-brand-blue opacity-50 group-hover:opacity-100 group-hover:w-2 transition-all duration-300"></div>
+                        <div class="pl-3">
+                            <h4 class="font-bold text-slate-800 text-base mb-3 border-b border-slate-50 pb-2">${dept.name}</h4>
+                            <div class="flex flex-col gap-3 text-sm">
+                                ${nameHtml || rolesHtml ? `
+                                <div class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-blue-50 text-brand-blue flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-tie text-xs"></i></div>
+                                    <div>
+                                        <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.unitLabel}</span>
+                                        ${nameHtml}
+                                        <div class="${rColor} ${rWeight} ${rStyle} ${rSize} leading-snug">
+                                            ${rolesHtml}
+                                        </div>
+                                    </div>
+                                </div>` : ''}
+                                ${dept.address ? `
+                                <div class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-door-open text-xs"></i></div>
+                                    <div><span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.roomLabel}</span><span class="text-slate-700 block">${dept.address}</span></div>
+                                </div>` : ''}
+                            </div>
+                        </div>`;
+                    card.style.opacity = '0';
+                    card.style.animation = `fadeInUp 0.4s ease forwards ${index * 0.05}s`;
+                    modalList.appendChild(card);
+                });
+            } 
+            else if (type === 'vanhoa') {
+                const data = ASSETS.diemVanHoa.find(item => item.id === itemId);
+                if (!data) return;
+
+                modalTitle.textContent = data.title;
+                modalSubtitle.textContent = "Thông tin chi tiết di tích / điểm văn hóa";
+                modalList.className = "flex flex-col gap-6 pb-6";
+                
+                let galleryHTML = (data.gallery && data.gallery.length > 0) ? `
+                    <div class="mt-4">
+                        <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-images text-brand-blue"></i> Thư viện hình ảnh</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                             ${data.gallery.map(img => `
+                                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden group/img cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
+                                    <div class="aspect-[4/3] overflow-hidden bg-slate-100"><img src="${img.image || img}" alt="${img.caption || 'Hình ảnh'}" class="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/500x375/e2e8f0/64748b?text=Hinh+Anh';"></div>
+                                    <div class="p-3 bg-white text-center"><p class="text-sm font-medium text-slate-700">${img.caption || ''}</p></div>
+                                </div>`).join('')}
+                        </div>
+                    </div>` : '';
+                const card = document.createElement('div');
+                card.className = "animate-[fadeInUp_0.4s_ease_forwards]";
+                card.innerHTML = `
+                    <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-light rounded-bl-full -z-0 opacity-50"></div>
+                        <div class="relative z-10">
+                            <h4 class="text-lg font-bold text-slate-800 mb-3"><i class="fa-solid fa-circle-info text-brand-blue mr-2"></i>Giới thiệu chung</h4>
+                            <p class="text-slate-600 leading-relaxed text-base md:text-lg text-justify mb-6">${data.description}</p>
+                            ${data.address ? `
+                            <div class="inline-flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 w-full sm:w-auto">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-500 shrink-0"><i class="fa-solid fa-location-dot"></i></div>
+                                    <div><span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Địa chỉ</span><span class="font-medium text-sm text-slate-800">${data.address}</span></div>
+                                </div>
+                                <a href="${data.mapLink}" target="_blank" class="sm:ml-auto w-full sm:w-auto text-center px-4 py-2 bg-brand-blue text-white text-sm font-semibold rounded-xl hover:bg-brand-dark transition-colors shadow-sm">Chỉ đường</a>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    ${galleryHTML}`;
+                modalList.appendChild(card);
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-90', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            history.pushState({ modalOpen: true }, '');
+        };
+
+        window.closeModal = function(isFromPopState = false) {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-90', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modalList.innerHTML = ''; 
+            }, 300);
+            if (isFromPopState !== true && history.state && history.state.modalOpen) {
+                history.back();
+            }
+        };
+
+        document.addEventListener('keydown', (event) => {
+            if (!modal.classList.contains('hidden')) {
+                if (event.key === 'Escape' || event.key === 'Backspace') {
+                    event.preventDefault(); 
+                    window.closeModal();
+                }
+            }
+        });
+        
+        window.addEventListener('popstate', (event) => {
+            if (!modal.classList.contains('hidden')) {
+                window.closeModal(true); 
+            }
+        });
+    </script>
+
     <style>
         .drop-shadow-logo {
             filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.2));
@@ -224,115 +508,9 @@ const globalData = {
         </div>
     </div>
 
-    <script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script is:inline src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
-
-    <!-- THẺ SCRIPT GIAO DIỆN & CHATBOT -->
-    <script is:inline define:vars={{ coQuanData, vanHoaData, tdpData, globalData }}>
-        const ASSETS = { global: globalData, coQuanNhaNuoc: coQuanData, diemVanHoa: vanHoaData, diemHoiTruong: tdpData };
-        const departmentData = {};
-        ASSETS.coQuanNhaNuoc.forEach(item => {
-            departmentData[item.id] = { title: item.title, departments: item.departments, theme: item.theme, unitLabel: item.unitLabel || "Đồng chí", roomLabel: item.roomLabel || "Tầng / Phòng" };
-        });
-
-        const themeColors = { blue: { text: 'text-blue-600', bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-700' }, red: { text: 'text-red-600', bg: 'bg-red-50', badge: 'bg-red-100 text-red-700' }, green: { text: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' }, yellow: { text: 'text-amber-600', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700' } };
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const mobileBtn = document.getElementById('mobile-menu-btn');
-            const mobileIcon = document.getElementById('mobile-menu-icon');
-            const mobileMenu = document.getElementById('mobile-menu');
-            const mobileLinks = document.querySelectorAll('.mobile-link');
-
-            mobileBtn.addEventListener('click', () => {
-                const isHidden = mobileMenu.classList.contains('hidden');
-                if(isHidden) {
-                    mobileMenu.classList.remove('hidden'); mobileMenu.classList.add('flex'); mobileIcon.classList.remove('fa-bars'); mobileIcon.classList.add('fa-xmark'); 
-                } else {
-                    mobileMenu.classList.add('hidden'); mobileMenu.classList.remove('flex'); mobileIcon.classList.remove('fa-xmark'); mobileIcon.classList.add('fa-bars'); 
-                }
-            });
-
-            mobileLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    mobileMenu.classList.add('hidden'); mobileMenu.classList.remove('flex'); mobileIcon.classList.remove('fa-xmark'); mobileIcon.classList.add('fa-bars');
-                });
-            });
-
-            document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
-            document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
-            document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
-            document.getElementById('app-footer').innerText = ASSETS.global.footerText;
-
-            const nhaNuocContainer = document.getElementById('nhanuoc-list');
-            ASSETS.coQuanNhaNuoc.forEach((item, index) => {
-                const t = themeColors[item.theme] || themeColors.blue;
-                nhaNuocContainer.innerHTML += `
-                    <div class="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col h-full transform hover:-translate-y-2 cursor-pointer" data-aos="fade-up" data-aos-delay="${(index+1)*100}" onclick="openModal('${item.id}', 'nhanuoc')">
-                        <div class="relative h-48 sm:h-56 overflow-hidden bg-slate-100">
-                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Hình+ảnh';">
-                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
-                            <h3 class="absolute bottom-4 left-4 right-4 text-white font-bold text-xl drop-shadow-md leading-tight">${item.title}</h3>
-                        </div>
-                        <div class="p-5 flex-1 flex flex-col relative">
-                            <div class="absolute top-0 right-4 w-12 h-12 rounded-full ${t.bg} ${t.text} flex items-center justify-center -translate-y-1/2 shadow-sm border-4 border-white group-hover:rotate-12 transition-transform">
-                                <i class="fa-solid fa-building text-lg"></i>
-                            </div>
-                            <p class="text-slate-600 text-sm flex-1 mb-4 mt-2 line-clamp-3">${item.description || ''}</p>
-                            ${item.address ? `
-                            <a href="${item.mapLink || '#'}" target="_blank" onclick="event.stopPropagation()" class="mt-auto bg-slate-50 hover:bg-slate-100 p-3 rounded-2xl flex items-center gap-3 transition-colors group/map">
-                                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-red-500 shadow-sm group-hover/map:bg-red-500 group-hover/map:text-white transition-colors">
-                                    <i class="fa-solid fa-location-dot"></i>
-                                </div>
-                                <span class="text-xs font-medium text-slate-700 flex-1 truncate">${item.address}</span>
-                                <i class="fa-solid fa-arrow-right text-slate-400 group-hover/map:text-red-500 group-hover/map:translate-x-1 transition-all"></i>
-                            </a>` : ''}
-                        </div>
-                    </div>`;
-            });
-
-            const vanHoaContainer = document.getElementById('vanhoa-list');
-            ASSETS.diemVanHoa.forEach((item, index) => {
-                vanHoaContainer.innerHTML += `
-                    <div class="group flex flex-col sm:flex-row bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 transform hover:-translate-y-2 cursor-pointer" data-aos="fade-up" data-aos-delay="${(index+1)*100}" onclick="openModal('${item.id}', 'vanhoa')">
-                        <div class="sm:w-2/5 h-56 sm:h-auto relative overflow-hidden bg-slate-100 shrink-0">
-                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" onerror="this.onerror=null;this.src='https://placehold.co/600x800/e2e8f0/64748b?text=Ảnh+Minh+Hoạ';">
-                            <div class="absolute inset-0 bg-brand-blue/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        </div>
-                        <div class="p-6 flex-1 flex flex-col justify-center">
-                            <div class="inline-block px-3 py-1 bg-brand-light text-brand-blue rounded-full text-xs font-bold mb-3 w-max">Điểm Di Tích / Văn Hóa</div>
-                            <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-brand-blue transition-colors">${item.title}</h3>
-                            <p class="text-slate-600 text-sm mb-4 line-clamp-3">${item.description}</p>
-                            <a href="${item.mapLink}" target="_blank" onclick="event.stopPropagation()" class="mt-auto inline-flex items-center gap-2 text-sm text-brand-blue font-semibold hover:text-brand-dark group/link">
-                                <i class="fa-solid fa-map-location-dot"></i> Xem trên bản đồ
-                                <i class="fa-solid fa-arrow-right-long opacity-0 -ml-2 group-hover/link:opacity-100 group-hover/link:ml-1 transition-all"></i>
-                            </a>
-                        </div>
-                    </div>`;
-            });
-
-            const hoiTruongContainer = document.getElementById('hoitruong-list');
-            ASSETS.diemHoiTruong.forEach((item, index) => {
-                let delay = (index % 3) * 100; 
-                hoiTruongContainer.innerHTML += `
-                    <a href="${item.mapLink}" target="_blank" class="block bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col hover:shadow-lg hover:shadow-blue-900/10 hover:-translate-y-2 hover:border-brand-blue/30 transition-all duration-300 cursor-pointer group" data-aos="fade-up" data-aos-delay="${delay}">
-                        <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-blue-50/70 rounded-bl-full -z-0 group-hover:scale-125 transition-transform duration-500"></div>
-                        <div class="relative z-10 flex flex-col h-full">
-                            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-light text-brand-blue rounded-full text-[10px] sm:text-xs font-semibold mb-3 sm:mb-4 w-fit">
-                                <i class="fa-solid fa-location-dot"></i>
-                                <span>${item.badge}</span>
-                            </div>
-                            <div class="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm">
-                                <i class="fa-solid fa-location-dot text-slate-400 mt-1 w-3 sm:w-4 text-center"></i>
-                                <div><span class="text-slate-500 block text-[10px] sm:text-[11px] mb-0.5 uppercase tracking-wide">Địa chỉ:</span><span class="text-slate-800 font-medium">${item.address}</span></div>
-                            </div>
-                        </div>
-                    </a>`;
-            });
-
-            new Typed('#typed-subtitle', { strings: ASSETS.global.subtitles, typeSpeed: 60, backSpeed: 30, backDelay: 2500, loop: true });
-            AOS.init({ duration: 800, once: true, offset: 50 });
-
-            // LOGIC CHATBOT
+    <!-- THẺ SCRIPT 2: XỬ LÝ CHATBOT (BẢN VÁ: NHÚNG TRỰC TIẾP DỮ LIỆU BẰNG DEFINE:VARS) -->
+    <script is:inline define:vars={{ coQuanData }}>
+        document.addEventListener('DOMContentLoaded', () => {
             const chatToggle = document.getElementById('chat-toggle');
             const chatWindow = document.getElementById('chat-window');
             const closeChat = document.getElementById('close-chat');
@@ -351,7 +529,9 @@ const globalData = {
 
             let chatHistory = JSON.parse(localStorage.getItem('tanlap_pro_history')) || [];
             
-            function scrollToBottom() { chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' }); }
+            function scrollToBottom() {
+                chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            }
 
             function renderHistory() {
                 chatMessages.innerHTML = `
@@ -403,22 +583,26 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                let webContext = "THÔNG TIN CƠ CẤU TỔ CHỨC, NHÂN SỰ VÀ ĐỊA CHỈ NƠI LÀM VIỆC CHÍNH XÁC NHẤT:\n";
+                // THU THẬP TÊN NHÂN SỰ TỪ BIẾN ĐƯỢC NHÚNG TRỰC TIẾP TỪ ASTRO
+                let webContext = "THÔNG TIN CƠ CẤU TỔ CHỨC VÀ NHÂN SỰ CHÍNH XÁC NHẤT (Nếu không có tên trong danh sách này, vui lòng trả lời là chưa cập nhật):\n";
                 if (coQuanData) {
                     coQuanData.forEach(cq => {
                         if (cq.departments) {
                             cq.departments.forEach(dept => {
-                                let cleanRoles = (dept.rolesHtml || '').replace(/<\/div>/g, ', ').replace(/<[^>]*>?/gm, '').trim();
+                                let cleanRoles = (dept.rolesHtml || '')
+                                    .replace(/<\/div>/g, ', ') 
+                                    .replace(/<[^>]*>?/gm, '')
+                                    .trim();
                                 cleanRoles = cleanRoles.replace(/,\s*$/, "");
-                                webContext += `\n* Thuộc Cơ quan/Tổ chức lớn: ${cq.title} (Địa chỉ cơ quan: ${cq.address || 'Đang cập nhật'})\n`;
-                                webContext += `  - Phòng ban trực thuộc: ${dept.name}\n`;
-                                webContext += `  - Phòng làm việc cụ thể: ${dept.address || 'Đang cập nhật'}\n`;
+                                
+                                webContext += `\n* Cơ quan: ${cq.title} - Phòng ban/Tổ chức: ${dept.name}\n`;
                                 webContext += `  - Cán bộ phụ trách: ${dept.personName || 'Đang cập nhật'}\n`;
                                 webContext += `  - Chức danh/Chức vụ: ${cleanRoles}\n`;
                             });
                         }
                     });
                 }
+                console.log("=== DỮ LIỆU ĐANG BƠM CHO AI ===", webContext);
 
                 chatInput.value = '';
                 chatInput.disabled = true;
@@ -438,25 +622,15 @@ const globalData = {
                         body: JSON.stringify({ message: message, history: chatHistory, webData: webContext }) 
                     });
                     
-                    if (!response.ok) {
-                        const existingBubble = document.getElementById(msgId);
-                        if (existingBubble) existingBubble.innerHTML = `<span class="text-red-600 font-medium">⚠️ Lỗi máy chủ (${response.status}): Vui lòng tải lại trang.</span>`;
-                        chatInput.disabled = false; sendBtn.disabled = false; chatInput.focus();
-                        return;
-                    }
-
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder("utf-8");
-                    let buffer = "";
 
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
                         
-                        buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop(); // Giữ lại phần chưa hoàn chỉnh
-                        
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
                         for (const line of lines) {
                             if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                                 try {
@@ -469,24 +643,11 @@ const globalData = {
                                             scrollToBottom();
                                         }
                                     }
-                                } catch (e) {} 
+                                } catch (e) {
+                                    console.error("Lỗi parse JSON đoạn chunk:", e);
+                                } 
                             }
                         }
-                    }
-
-                    // BỘ XẢ CẶN (FLUSH BUFFER): Gom nốt các mảnh chữ cuối cùng
-                    if (buffer.trim().length > 0) {
-                        const line = buffer;
-                        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-                            try {
-                                const data = JSON.parse(line.replace('data: ', '').trim());
-                                if (data.response) aiFullResponse += data.response;
-                            } catch(e) {}
-                        }
-                    }
-
-                    if (!aiFullResponse || aiFullResponse.length === 0) {
-                        aiFullResponse = "⚠️ Lỗi: Không nhận được dữ liệu từ máy chủ. Vui lòng thử lại!";
                     }
 
                     appendAIMsg(aiFullResponse, false, msgId);
@@ -497,7 +658,9 @@ const globalData = {
                 } catch (error) {
                     console.error("Lỗi Fetch API:", error);
                     const existingBubble = document.getElementById(msgId);
-                    if (existingBubble) existingBubble.innerHTML = `<span class="text-red-500 font-medium">Lỗi mạng! Vui lòng kiểm tra kết nối.</span>`;
+                    if (existingBubble) {
+                        existingBubble.innerHTML = `<span class="text-red-500 font-medium">Lỗi mạng! Vui lòng kiểm tra kết nối.</span>`;
+                    }
                 }
 
                 chatInput.disabled = false;
@@ -507,146 +670,6 @@ const globalData = {
 
             chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
             sendBtn.addEventListener('click', sendMessage);
-        });
-
-        window.openModal = function(itemId, type) {
-            const modal = document.getElementById('departmentModal');
-            const modalContent = document.getElementById('modalContent');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalSubtitle = document.getElementById('modalSubtitle');
-            const modalList = document.getElementById('modalList');
-
-            modalList.innerHTML = '';
-            if (type === 'nhanuoc') {
-                const data = departmentData[itemId];
-                if (!data) return;
-                
-                modalTitle.textContent = data.title;
-                modalSubtitle.textContent = "Sơ đồ các phòng ban & Cán bộ phụ trách";
-                modalList.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-6";
-
-                (data.departments || []).forEach((dept, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-md transition-all duration-300 cursor-pointer hover:border-brand-blue/30';
-                    
-                    let nColor = dept.nameColor || 'text-brand-blue';
-                    let nWeight = dept.nameWeight || 'font-bold';
-                    let nStyle = dept.nameStyle || 'not-italic';
-                    let nSize = dept.nameSize || 'text-base';
-
-                    let rColor = dept.roleColor || 'text-slate-500';
-                    let rWeight = dept.roleWeight || 'font-normal';
-                    let rStyle = dept.roleStyle || 'italic';
-                    let rSize = dept.roleSize || 'text-xs';
-
-                    let nameHtml = dept.personName ? `<span class="${nColor} ${nWeight} ${nStyle} ${nSize} uppercase block mb-1">${dept.personName}</span>` : '';
-                    let rolesHtml = dept.rolesHtml || '';
-
-                    card.innerHTML = `
-                        <div class="absolute top-0 left-0 w-1 h-full bg-brand-blue opacity-50 group-hover:opacity-100 group-hover:w-2 transition-all duration-300"></div>
-                        <div class="pl-3">
-                            <h4 class="font-bold text-slate-800 text-base mb-3 border-b border-slate-50 pb-2">${dept.name}</h4>
-                            <div class="flex flex-col gap-3 text-sm">
-                                ${nameHtml || rolesHtml ? `
-                                <div class="flex items-start gap-3">
-                                    <div class="w-6 h-6 rounded-full bg-blue-50 text-brand-blue flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-tie text-xs"></i></div>
-                                    <div>
-                                        <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.unitLabel}</span>
-                                        ${nameHtml}
-                                        <div class="${rColor} ${rWeight} ${rStyle} ${rSize} leading-snug">${rolesHtml}</div>
-                                    </div>
-                                </div>` : ''}
-                                ${dept.address ? `
-                                <div class="flex items-start gap-3">
-                                    <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-door-open text-xs"></i></div>
-                                    <div><span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">${data.roomLabel}</span><span class="text-slate-700 block">${dept.address}</span></div>
-                                </div>` : ''}
-                            </div>
-                        </div>`;
-                    card.style.opacity = '0';
-                    card.style.animation = `fadeInUp 0.4s ease forwards ${index * 0.05}s`;
-                    modalList.appendChild(card);
-                });
-            } else if (type === 'vanhoa') {
-                const data = ASSETS.diemVanHoa.find(item => item.id === itemId);
-                if (!data) return;
-
-                modalTitle.textContent = data.title;
-                modalSubtitle.textContent = "Thông tin chi tiết di tích / điểm văn hóa";
-                modalList.className = "flex flex-col gap-6 pb-6";
-                
-                let galleryHTML = (data.gallery && data.gallery.length > 0) ? `
-                    <div class="mt-4">
-                        <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-images text-brand-blue"></i> Thư viện hình ảnh</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                             ${data.gallery.map(img => `
-                                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden group/img cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
-                                    <div class="aspect-[4/3] overflow-hidden bg-slate-100"><img src="${img.image || img}" alt="${img.caption || 'Hình ảnh'}" class="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/500x375/e2e8f0/64748b?text=Hinh+Anh';"></div>
-                                    <div class="p-3 bg-white text-center"><p class="text-sm font-medium text-slate-700">${img.caption || ''}</p></div>
-                                </div>`).join('')}
-                        </div>
-                    </div>` : '';
-                const card = document.createElement('div');
-                card.className = "animate-[fadeInUp_0.4s_ease_forwards]";
-                card.innerHTML = `
-                    <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-light rounded-bl-full -z-0 opacity-50"></div>
-                        <div class="relative z-10">
-                            <h4 class="text-lg font-bold text-slate-800 mb-3"><i class="fa-solid fa-circle-info text-brand-blue mr-2"></i>Giới thiệu chung</h4>
-                            <p class="text-slate-600 leading-relaxed text-base md:text-lg text-justify mb-6">${data.description}</p>
-                            ${data.address ? `
-                            <div class="inline-flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 w-full sm:w-auto">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-500 shrink-0"><i class="fa-solid fa-location-dot"></i></div>
-                                    <div><span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Địa chỉ</span><span class="font-medium text-sm text-slate-800">${data.address}</span></div>
-                                </div>
-                                <a href="${data.mapLink}" target="_blank" class="sm:ml-auto w-full sm:w-auto text-center px-4 py-2 bg-brand-blue text-white text-sm font-semibold rounded-xl hover:bg-brand-dark transition-colors shadow-sm">Chỉ đường</a>
-                            </div>` : ''}
-                        </div>
-                    </div>
-                    ${galleryHTML}`;
-                modalList.appendChild(card);
-            }
-
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                const modalContent = document.getElementById('modalContent');
-                modalContent.classList.remove('scale-90', 'opacity-0');
-                modalContent.classList.add('scale-100', 'opacity-100');
-            }, 10);
-            history.pushState({ modalOpen: true }, '');
-        };
-
-        window.closeModal = function(isFromPopState = false) {
-            const modal = document.getElementById('departmentModal');
-            const modalContent = document.getElementById('modalContent');
-            const modalList = document.getElementById('modalList');
-            
-            modalContent.classList.remove('scale-100', 'opacity-100');
-            modalContent.classList.add('scale-90', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modalList.innerHTML = ''; 
-            }, 300);
-            if (isFromPopState !== true && history.state && history.state.modalOpen) {
-                history.back();
-            }
-        };
-
-        document.addEventListener('keydown', (event) => {
-            const modal = document.getElementById('departmentModal');
-            if (!modal.classList.contains('hidden')) {
-                if (event.key === 'Escape' || event.key === 'Backspace') {
-                    event.preventDefault(); window.closeModal();
-                }
-            }
-        });
-        
-        window.addEventListener('popstate', (event) => {
-            const modal = document.getElementById('departmentModal');
-            if (!modal.classList.contains('hidden')) {
-                window.closeModal(true); 
-            }
         });
     </script>
 </body>
