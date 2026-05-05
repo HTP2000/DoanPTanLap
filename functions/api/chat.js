@@ -11,48 +11,41 @@ export async function onRequestPost(context) {
         });
     }
 
+    const body = await request.json();
+    const { message, history = [], webData = "" } = body;
+
     try {
-        const body = await request.json();
-        const { message, history = [], webData = "" } = body;
-
+        // 1. TẠO MÃ KHÓA TỪ CÂU HỎI ĐỂ TÌM TRONG KV
         const cacheInput = message.toLowerCase().trim();
-        const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheInput));
-        const cacheKey = "qa_" + Array.from(new Uint8Array(hashBuffer)).map(x => x.toString(16).padStart(2, '0')).join('').substring(0, 16);
+        const cacheKey = "qa_" + await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cacheInput))
+            .then(b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('').substring(0, 16));
 
-        // 1. Kiểm tra Admin KV
+        // 2. KIỂM TRA XEM CÂU TRẢ LỜI ĐÃ CÓ TRONG Ổ CỨNG CHƯA
         if (env.QA_DB) {
-            try {
-                const cachedStr = await env.QA_DB.get(cacheKey);
-                if (cachedStr) {
+            const cachedStr = await env.QA_DB.get(cacheKey);
+            if (cachedStr) {
+                try {
                     const cachedData = JSON.parse(cachedStr);
+                    // Nếu đã có, bot sẽ trả lời ngay lập tức
                     return new Response(`data: {"response": ${JSON.stringify(cachedData.answer)}}\n\ndata: [DONE]\n\n`, {
                         headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" }
                     });
-                }
-            } catch(e) {}
+                } catch(e) { console.error("Lỗi đọc Cache KV"); }
+            }
         }
 
-        // 2. Tìm kiếm Vector
-        let retrievedContext = "";
-        if (env.VECTORIZE_INDEX) {
-            try {
-                const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
-                const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 5, returnMetadata: true });
-                retrievedContext = vectorMatches.matches?.map(m => m.metadata?.text || "").filter(t => t !== "").join('\n\n') || "";
-            } catch(e) {}
-        }
+        // 3. NẾU CHƯA CÓ, TIẾN HÀNH HỎI AI
+        const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
+        const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 5, returnMetadata: true });
+        const retrievedContext = vectorMatches.matches?.map(m => m.metadata?.text || "").filter(t => t !== "").join('\n\n') || "";
 
-        // 3. Prompt thiết quân luật
+        // THÊM QUY TẮC ĐỊNH DẠNG (IN ĐẬM, VIẾT HOA) VÀO NÃO AI
         const systemPrompt = `Bạn là Trợ lý AI của Đoàn Phường Tân Lập.
-QUY TẮC TRÍCH XUẤT DỮ LIỆU VÀ TRÌNH BÀY NGHIÊM NGẶT:
+QUY TẮC TRÍCH XUẤT DỮ LIỆU NGHIÊM NGẶT:
 1. ƯU TIÊN SỐ 1: Tìm thông tin trong mục [DỮ LIỆU TỪ WEB].
 2. ƯU TIÊN SỐ 2: Nếu không có, tìm trong [DỮ LIỆU TỪ GOOGLE SHEET/HỆ THỐNG].
-3. CÁCH XƯNG HÔ VÀ TRÌNH BÀY:
-   - TUYỆT ĐỐI KHÔNG dùng các cụm từ mở đầu như "Theo thông tin trên web", "Dựa vào dữ liệu". Hãy trả lời trực tiếp.
-   - BẮT BUỘC thêm từ "đồng chí" trước họ và tên của cán bộ.
-   - BẮT BUỘC IN ĐẬM VÀ VIẾT HOA tên và chức vụ (Ví dụ: đồng chí **TRẦN THỊ THÙY TRANG - BÍ THƯ ĐOÀN PHƯỜNG**).
-   - Khi hỏi về ĐỊA CHỈ / NƠI LÀM VIỆC, sử dụng thông tin "Địa chỉ cơ quan" kết hợp với "Phòng làm việc".
-4. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt. Nếu không có dữ liệu, hãy nói "Hiện tại hệ thống chưa cập nhật thông tin này".
+3. QUY TẮC TRÌNH BÀY: Khi trả lời tên Cán Bộ và Chức Vụ, bạn PHẢI IN ĐẬM VÀ VIẾT HOA TOÀN BỘ (Ví dụ: **TRẦN THỊ THÙY TRANG - BÍ THƯ ĐOÀN PHƯỜNG** hoặc **HOÀNG XUÂN TÚ - CHỦ TỊCH HỘI CỰU CHIẾN BINH**).
+4. LỆNH CẤM: Tuyệt đối không tự sáng tác, bịa đặt tên người hoặc chức vụ. Nếu không có dữ liệu, hãy nói là chưa cập nhật.
 
 [DỮ LIỆU TỪ WEB (ƯU TIÊN 1)]:
 ${webData}
@@ -70,32 +63,23 @@ ${retrievedContext}`;
 
         waitUntil((async () => {
             let fullAnswer = "";
-            let buffer = ""; // BỘ ĐỆM XỬ LÝ ĐỨT GÃY STREAM CHO SERVER
             try {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
-                        if (fullAnswer.length > 5) {
-                            try {
-                                if (env.QA_DB) {
-                                    await env.QA_DB.put(cacheKey, JSON.stringify({ question: message, answer: fullAnswer, timestamp: new Date().toISOString() }));
-                                }
-                                const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzdXsWZTPMv0fxXnDbRWyqUCD9AahcWcoEQG6n3TCIpMux_aMcJD0Y5t0Z-xyH5NYMA/exec"; 
-                                fetch(GOOGLE_SHEET_URL, {
-                                    method: "POST", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ question: message, answer: fullAnswer })
-                                }).catch(e => {});
-                            } catch(err) {}
+                        // 4. SAU KHI AI TRẢ LỜI XONG, LƯU VÀO Ổ CỨNG KV
+                        if (fullAnswer.length > 5 && env.QA_DB) {
+                            const dataToSave = {
+                                question: message,
+                                answer: fullAnswer,
+                                timestamp: new Date().toISOString()
+                            };
+                            await env.QA_DB.put(cacheKey, JSON.stringify(dataToSave));
                         }
                         writer.close(); break;
                     }
                     writer.write(value);
-                    
-                    // Ráp nối các mảnh vỡ
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop(); // Giữ lại mảnh vỡ ở cuối chờ lượt sau
-                    
+                    const lines = decoder.decode(value).split('\n');
                     for (const line of lines) {
                         if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                             try { fullAnswer += JSON.parse(line.replace('data: ', '')).response; } catch(e) {}
@@ -108,7 +92,6 @@ ${retrievedContext}`;
         return new Response(readable, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
 
     } catch (error) {
-        const errorMsg = JSON.stringify("⚠️ Máy chủ gặp sự cố: " + (error.message || "Lỗi không xác định"));
-        return new Response(`data: {"response": ${errorMsg}}\n\ndata: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
+        return new Response(`data: {"response": "⚠️ Lỗi: ${error.message}"}\n\ndata: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
     }
 }
