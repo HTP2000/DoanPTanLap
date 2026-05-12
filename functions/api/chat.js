@@ -29,13 +29,9 @@ export async function onRequestPost(context) {
 
         if (webData && webData.length > 2000) webData = webData.substring(0, 2000) + "\n...[Dữ liệu đã được thu gọn]";
 
-        // TĂNG TOP_K LÊN 6 ĐỂ QUÉT SÂU HƠN
         const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
         const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 6, returnMetadata: true });
         
-        // ====================================================================
-        // BÓC TÁCH VÀ PHÂN LOẠI DỮ LIỆU THEO TỪNG SHEET ĐỂ ƯU TIÊN
-        // ====================================================================
         let nhanSuContext = "";
         let diaDiemContext = "";
         let kienThucContext = "";
@@ -44,39 +40,27 @@ export async function onRequestPost(context) {
             const text = m.metadata?.text || "";
             if (!text) return;
             const source = m.metadata?.source;
-            
             if (source === "NhanSu_CoQuan") nhanSuContext += text + "\n";
             else if (source === "DiaDiem_ThuTuc") diaDiemContext += text + "\n";
-            else if (source === "KienThucNen") kienThucContext += text + "\n";
-            else kienThucContext += text + "\n"; // Nếu không rõ nguồn thì gom vào kiến thức chung
+            else kienThucContext += text + "\n"; 
         });
 
-        // ====================================================================
-        // BỘ LUẬT THÉP: ÉP BUỘC ĐỌC THEO THỨ TỰ ƯU TIÊN 1 -> 2 -> 3
-        // ====================================================================
+        // BỘ LUẬT ĐÃ ĐƯỢC NÂNG CẤP ĐỂ IN ĐẬM VÀ XÓA CHỮ THỪA
         const systemPrompt = `Bạn là Trợ lý AI Hành chính của Đoàn Phường Tân Lập.
 
 QUY TẮC SỐNG CÒN:
 1. NGÔN NGỮ: Bắt buộc 100% Tiếng Việt. TUYỆT ĐỐI CẤM dùng tiếng Anh.
-2. ĐỊNH DẠNG TÊN CÁN BỘ: BẮT BUỘC thêm "đồng chí" và bọc thẻ HTML: đồng chí <strong style="color: #0056b3; text-transform: uppercase;">[TÊN CÁN BỘ]</strong>. NGHIÊM CẤM dùng dấu sao (**).
-3. THÁI ĐỘ: Vô cùng lịch sự, tận tình. Luôn xưng hô "Dạ thưa", "kính chào quý công dân".
-4. TÌM KIẾM THÔNG TIN (RẤT QUAN TRỌNG): Bạn BẮT BUỘC phải đọc và trả lời theo ĐÚNG thứ tự ưu tiên các khối dữ liệu dưới đây. Nếu Khối 1 có câu trả lời, lập tức dừng lại và trả lời ngay. Chỉ khi Khối 1 KHÔNG CÓ thông tin mới được phép quét tiếp Khối 2 và Khối 3.
-   - Nếu không tìm thấy thông tin trong cả 3 khối, hãy nói: "Dạ rất tiếc, hệ thống chưa cập nhật thông tin này ạ." TUYỆT ĐỐI không bịa đặt.
-5. BẢN ĐỒ: Nếu dân hỏi "chỉ đường" hoặc "địa chỉ", hãy gửi Link bản đồ.
+2. TÊN CÁN BỘ: BẮT BUỘC thêm "đồng chí" và bọc thẻ HTML: đồng chí <strong style="color: #0056b3; text-transform: uppercase;">[TÊN CÁN BỘ]</strong>. NGHIÊM CẤM dùng dấu sao (**).
+3. LÀM NỔI BẬT THÔNG TIN: Bắt buộc dùng dấu sao (**) để in đậm các thông tin dữ liệu như: **Chức vụ**, **Phòng ban**, **Tầng/Phòng**, **Địa chỉ**. (Ví dụ: Cô làm việc tại **Tầng 1, Phòng 110**, địa chỉ **71 Nguyễn Văn Cừ**)
+4. BẢN ĐỒ: Nếu có link bản đồ, CHỈ CẦN in thẳng link URL ra ở cuối câu. TUYỆT ĐỐI KHÔNG ghi chữ "Link bản đồ:" hay "Link:" ở phía trước.
+5. THÁI ĐỘ: Vô cùng lịch sự. Luôn xưng "Dạ thưa", "kính chào".
+6. ƯU TIÊN TÌM KIẾM: Quét theo thứ tự Khối 1 -> Khối 2 -> Khối 3. Khối nào có thông tin thì dừng lại trả lời luôn. Nếu không có ở cả 3 khối thì nói: "Dạ rất tiếc, hệ thống chưa cập nhật thông tin này ạ."
 
 DỮ LIỆU THAM KHẢO ĐÃ PHÂN CẤP ƯU TIÊN:
-
-[KHỐI 1 - ƯU TIÊN CAO NHẤT: Dữ liệu Cán bộ & Nhân sự]
-${nhanSuContext || "Không có dữ liệu nhân sự khớp với câu hỏi."}
-
-[KHỐI 2 - ƯU TIÊN TRUNG BÌNH: Dữ liệu Địa điểm & Thủ tục]
-${diaDiemContext || "Không có dữ liệu thủ tục khớp với câu hỏi."}
-
-[KHỐI 3 - ƯU TIÊN THẤP: Dữ liệu Kiến thức nền chung]
-${kienThucContext || "Không có dữ liệu kiến thức chung khớp với câu hỏi."}
-
-[TỪ WEBSITE]:
-${webData}`;
+[KHỐI 1 - Dữ liệu Cán bộ]:\n${nhanSuContext || "Trống"}
+[KHỐI 2 - Dữ liệu Địa điểm/Thủ tục]:\n${diaDiemContext || "Trống"}
+[KHỐI 3 - Dữ liệu Kiến thức chung]:\n${kienThucContext || "Trống"}
+[TỪ WEBSITE]:\n${webData}`;
 
         const aiMessages = [{ role: "system", content: systemPrompt }, ...cleanHistory, { role: "user", content: message }];
 
@@ -115,6 +99,6 @@ ${webData}`;
 
         return new Response(readable, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
     } catch (error) {
-        return new Response(`data: {"response": "Dạ thưa quý công dân, hệ thống AI đang xử lý một lượng lớn dữ liệu nên hơi quá tải. Mong bạn vui lòng thử lại sau giây lát ạ!"}\n\ndata: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
+        return new Response(`data: {"response": "Dạ thưa quý công dân, hệ thống AI đang bận xử lý dữ liệu. Mong bạn vui lòng thử lại sau giây lát ạ!"}\n\ndata: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
     }
 }
