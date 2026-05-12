@@ -22,12 +22,22 @@ export async function onRequestPost(context) {
             }
         }
 
+        // ====================================================================
+        // BỘ LỌC RÁC LỊCH SỬ (DIỆT LỖI BONG BÓNG TRẮNG CỦA TRÌNH DUYỆT)
+        // Loại bỏ hoàn toàn các tin nhắn trống, lỗi mạng, hoặc tiếng Anh
+        // ====================================================================
+        const cleanHistory = history.filter(msg => 
+            msg.content && 
+            msg.content.trim().length > 0 && 
+            !msg.content.toLowerCase().includes("apologize") &&
+            !msg.content.includes("hệ thống đang bận")
+        );
+
         const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
         const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 4, returnMetadata: true });
         
         let sheetContext = vectorMatches.matches?.map(m => m.metadata?.text || "").filter(t => t !== "").join('\n\n') || "";
 
-        // NÂNG CẤP PROMPT: BỘ QUY TẮC THÉP CHỐNG TIẾNG ANH & ÉP ĐỊNH DẠNG
         const systemPrompt = `Bạn là Trợ lý AI Hành chính của Đoàn Phường Tân Lập. Hãy tuân thủ TUYỆT ĐỐI các quy tắc SỐNG CÒN sau:
 
 QUY TẮC 1 - NGÔN NGỮ (CẤM TIẾNG ANH):
@@ -51,7 +61,8 @@ DỮ LIỆU CỦA BẠN:
 <WEB_DATA>\n${webData}\n</WEB_DATA>
 <SHEET_DATA>\n${sheetContext}\n</SHEET_DATA>`;
 
-        const aiMessages = [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }];
+        // Sử dụng cleanHistory thay vì history gốc bị lỗi
+        const aiMessages = [{ role: "system", content: systemPrompt }, ...cleanHistory, { role: "user", content: message }];
 
         const stream = await env.AI.run('@cf/meta/llama-3-8b-instruct', { messages: aiMessages, stream: true });
         const { readable, writable } = new TransformStream();
@@ -65,7 +76,6 @@ DỮ LIỆU CỦA BẠN:
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
-                        // Lưu lịch sử nếu câu trả lời tiếng Việt và không phải là từ chối
                         if (fullAnswer.length > 5 && !fullAnswer.includes("chưa cập nhật thông tin") && !fullAnswer.toLowerCase().includes("apologize")) {
                             if (env.QA_DB) await env.QA_DB.put(cacheKey, JSON.stringify({ question: message, answer: fullAnswer, timestamp: new Date().toISOString() }));
                             if (env.GOOGLE_SCRIPT_URL) {
