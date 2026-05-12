@@ -19,30 +19,18 @@ export async function onRequestPost(context) {
             }
         }
 
-        // ====================================================================
-        // KHIÊN CHỐNG CRASH BONG BÓNG TRẮNG (Đã được vá lỗi hoàn chỉnh)
-        // ====================================================================
         let cleanHistory = [];
         for (let msg of history) {
             if (!msg.content || msg.content.trim().length < 2) continue;
             if (msg.role === 'assistant' && (msg.content.toLowerCase().includes("apologize") || msg.content.includes("hệ thống đang bận") || msg.content.includes("chưa cập nhật"))) continue;
-            
-            // Xóa nếu có 2 role giống nhau nằm kề nhau
-            if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === msg.role) {
-                cleanHistory.pop(); 
-            }
+            if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === msg.role) cleanHistory.pop(); 
             cleanHistory.push(msg);
         }
+        if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === 'user') cleanHistory.pop();
 
-        // ĐOẠN CODE BỊ THIẾU Ở BẢN TRƯỚC LÀ ĐÂY: Xóa nốt câu user cuối cùng trong lịch sử để tránh đụng độ với câu user hiện tại
-        if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === 'user') {
-            cleanHistory.pop();
-        }
-
-        if (webData && webData.length > 2000) webData = webData.substring(0, 2000) + "\n...[Dữ liệu đã được thu gọn]";
-
+        // GIẢM SỐ LƯỢNG QUÉT XUỐNG ĐỂ CHỐNG TRÀN BỘ NHỚ
         const queryVectorRes = await env.AI.run('@cf/baai/bge-m3', { text: [message] });
-        const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 6, returnMetadata: true });
+        const vectorMatches = await env.VECTORIZE_INDEX.query(queryVectorRes.data[0], { topK: 4, returnMetadata: true });
         
         let nhanSuContext = "";
         let diaDiemContext = "";
@@ -57,7 +45,6 @@ export async function onRequestPost(context) {
             else kienThucContext += text + "\n"; 
         });
 
-        // BỘ LUẬT ÉP XƯNG HÔ "ĐỒNG CHÍ" VÀ IN ĐẬM TÊN/CHỨC VỤ
         const systemPrompt = `Bạn là Trợ lý AI Hành chính của Đoàn Phường Tân Lập.
 
 QUY TẮC SỐNG CÒN VỀ GIAO TIẾP VÀ TRÌNH BÀY (BẮT BUỘC TUÂN THỦ 100%):
@@ -65,7 +52,7 @@ QUY TẮC SỐNG CÒN VỀ GIAO TIẾP VÀ TRÌNH BÀY (BẮT BUỘC TUÂN THỦ
 1. NGÔN NGỮ & ĐẠI TỪ NHÂN XƯNG:
    - 100% Tiếng Việt. TUYỆT ĐỐI CẤM dùng tiếng Anh.
    - TUYỆT ĐỐI KHÔNG dùng các từ "cô", "chú", "bác", "anh", "chị", "ông", "bà" để gọi/nhắc đến cán bộ.
-   - BẮT BUỘC dùng danh xưng "đồng chí" cho tất cả mọi người (Ví dụ đúng: "Đồng chí làm việc tại...", sai: "Cô làm việc tại...").
+   - BẮT BUỘC dùng danh xưng "đồng chí" cho tất cả mọi người.
 
 2. BẮT BUỘC IN ĐẬM BẰNG DẤU SAO (**): Bạn PHẢI bọc trong cặp dấu sao kép ** cho các thông tin sau để in đậm trên web:
    - Họ và Tên cán bộ (phải viết hoa chữ cái). Ví dụ: đồng chí **TRẦN THỊ THÙY TRANG**
@@ -82,8 +69,7 @@ QUY TẮC SỐNG CÒN VỀ GIAO TIẾP VÀ TRÌNH BÀY (BẮT BUỘC TUÂN THỦ
 DỮ LIỆU THAM KHẢO ĐÃ PHÂN CẤP ƯU TIÊN:
 [KHỐI 1 - Dữ liệu Cán bộ]:\n${nhanSuContext || "Trống"}
 [KHỐI 2 - Dữ liệu Địa điểm/Thủ tục]:\n${diaDiemContext || "Trống"}
-[KHỐI 3 - Dữ liệu Kiến thức chung]:\n${kienThucContext || "Trống"}
-[TỪ WEBSITE]:\n${webData}`;
+[KHỐI 3 - Dữ liệu Kiến thức chung]:\n${kienThucContext || "Trống"}`;
 
         const aiMessages = [{ role: "system", content: systemPrompt }, ...cleanHistory, { role: "user", content: message }];
 
@@ -122,6 +108,6 @@ DỮ LIỆU THAM KHẢO ĐÃ PHÂN CẤP ƯU TIÊN:
 
         return new Response(readable, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
     } catch (error) {
-        return new Response(`data: {"response": "Dạ thưa quý công dân, hệ thống đang bận cập nhật dữ liệu. Mong bạn vui lòng thử lại sau giây lát ạ!"}\n\ndata: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
+        return new Response(`data: {"response": "Dạ thưa quý công dân, hệ thống đang bận xử lý. Mong bạn vui lòng thử lại sau giây lát ạ!"}\n\ndata: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
     }
 }

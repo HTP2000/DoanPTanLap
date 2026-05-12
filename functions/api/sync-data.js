@@ -18,46 +18,41 @@ export async function onRequest(context) {
                     chunks.push({
                         id: `faq-${index}`,
                         text: textContent,
-                        metadata: { 
-                            type: "google_sheet", 
-                            source: row.sheet || "KienThucNen", // <--- BẮT LẤY TÊN SHEET
-                            text: textContent 
-                        } 
+                        metadata: { type: "google_sheet", source: row.sheet || "KienThucNen", text: textContent } 
                     });
                 });
             }
         }
 
-        // 2. KÉO DỮ LIỆU TỪ SANITY CMS (Thông tin địa phương & Nhân sự)
+        // 2. KÉO DỮ LIỆU TỪ SANITY CMS (Đã thêm address và mapLink)
         if (env.SANITY_PROJECT_ID) {
-            // Cập nhật Query để lấy thêm trường roles (chức danh phụ)
-            const sanityQuery = encodeURIComponent(`*[_type in ["coQuanNhaNuoc", "diemVanHoa"]] { 
-                _id, _type, title, description, address, 
-                departments[]{ name, personName, roles } 
+            const sanityQuery = encodeURIComponent(`*[_type in ["coQuanNhaNuoc", "diemVanHoa", "hoiTruong"]] { 
+                _id, _type, title, description, address, mapLink,
+                departments[]{ name, personName, roles, address } 
             }`);
             const sanityRes = await fetch(`https://${env.SANITY_PROJECT_ID}.api.sanity.io/v2022-03-07/data/query/production?query=${sanityQuery}`);
             
             if (sanityRes.ok) {
                 const sanityData = (await sanityRes.json()).result;
                 sanityData.forEach(item => {
-                    // Chặn các dữ liệu không hợp lệ/dữ liệu nháp (nếu có "Nguyễn Văn A" thì bỏ qua)
-                    if (item.title && item.title.includes("Nguyễn Văn A")) return;
+                    if (item.title && item.title.includes("Nguyễn Văn A")) return; 
 
                     let deptInfo = "";
                     if (item.departments) {
                         deptInfo = item.departments.map(d => {
-                            // Xử lý text từ Portable Text của Sanity cho chức vụ
                             const rolesText = d.roles ? d.roles.map(r => r.children.map(c => c.text).join("")).join(", ") : "Chưa cập nhật";
-                            return `- Bộ phận: ${d.name} | Cán bộ: ${d.personName || "Chưa rõ"} | Chức danh: ${rolesText}`;
+                            const tangPhong = d.address ? `(Vị trí: ${d.address})` : "";
+                            return `- Phòng ban: ${d.name} ${tangPhong} | Cán bộ: đồng chí ${d.personName || "Chưa rõ"} | Chức danh: ${rolesText}`;
                         }).join("\n");
                     }
                     
-                    const textContent = `Cơ quan/Địa điểm: ${item.title}. Địa chỉ: ${item.address || "Chưa rõ"}. Mô tả: ${item.description || "Không có"}. \nDanh sách nhân sự cụ thể:\n${deptInfo}`;
+                    const mapInfo = item.mapLink ? ` Link bản đồ: ${item.mapLink}` : "";
+                    const textContent = `Cơ quan/Địa điểm: ${item.title}. Địa chỉ cơ quan: ${item.address || "Chưa rõ"}.${mapInfo} Mô tả: ${item.description || "Không có"}. \nDanh sách nhân sự cụ thể:\n${deptInfo}`;
                     
                     chunks.push({
                         id: `sanity-${item._id}`,
                         text: textContent,
-                        metadata: { type: "diaphuong", source: "sanity", text: textContent } // Đã thêm trường text vào metadata
+                        metadata: { type: "diaphuong", source: "sanity", text: textContent } 
                     });
                 });
             }
@@ -71,9 +66,7 @@ export async function onRequest(context) {
             const batch = chunks.slice(i, i + BATCH_SIZE);
             const embedResponse = await env.AI.run('@cf/baai/bge-m3', { text: batch.map(c => c.text) });
             const vectorsToInsert = batch.map((chunk, index) => ({
-                id: chunk.id,
-                values: embedResponse.data[index],
-                metadata: chunk.metadata
+                id: chunk.id, values: embedResponse.data[index], metadata: chunk.metadata
             }));
             await env.VECTORIZE_INDEX.upsert(vectorsToInsert);
         }

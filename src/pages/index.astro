@@ -58,7 +58,7 @@ const globalData = {
     subtitles: [
         'Thanh Niên Xung Kích - Sáng Tạo Chuyển Đổi Số', 
         'Thông Tin Nhanh Chóng - Tiện Ích', 
-        'Chuyển Đổi Số - Phục Vụ Nhân Dân', 
+        'Chuyển Đổi Số - Phục Vụ Nhân Dân'
     ],
     footerText: "Công Trình Địa Phương Số"
 };
@@ -87,8 +87,7 @@ const globalData = {
     <header class="bg-animated-gradient text-white shadow-xl sticky top-0 z-40 border-b border-blue-400/30 relative">
         <div class="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
             <div class="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 pr-2">
-                <div id="app-logo-container" class="w-12 h-12 min-[375px]:w-14 min-[375px]:h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center floating-logo drop-shadow-xl flex-shrink-0">
-                </div>
+                <div id="app-logo-container" class="w-12 h-12 min-[375px]:w-14 min-[375px]:h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center floating-logo drop-shadow-xl flex-shrink-0"></div>
                 <div class="overflow-hidden flex-1 min-w-0 flex flex-col justify-center">
                     <h1 id="app-title-line1" class="text-[10px] min-[375px]:text-[11.5px] sm:text-base md:text-xl font-bold uppercase tracking-tight sm:tracking-wide drop-shadow-md leading-tight whitespace-nowrap"></h1>
                     <h2 id="app-title-line2" class="text-[10px] min-[375px]:text-[11.5px] sm:text-base md:text-xl font-bold uppercase tracking-tight sm:tracking-wide drop-shadow-md leading-tight whitespace-nowrap mt-[1px]"></h2>
@@ -176,7 +175,6 @@ const globalData = {
     <script is:inline src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script is:inline src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
 
-    <!-- THẺ SCRIPT 1: HIỂN THỊ GIAO DIỆN WEB -->
     <script is:inline define:vars={{ coQuanData, vanHoaData, tdpData, globalData }}>
         const ASSETS = {
             global: globalData,
@@ -184,7 +182,6 @@ const globalData = {
             diemVanHoa: vanHoaData,
             diemHoiTruong: tdpData
         };
-
         const departmentData = {};
         ASSETS.coQuanNhaNuoc.forEach(item => {
             departmentData[item.id] = { 
@@ -195,14 +192,12 @@ const globalData = {
                 roomLabel: item.roomLabel || "Tầng / Phòng"
             };
         });
-
         const themeColors = {
             blue: { text: 'text-blue-600', bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
             red: { text: 'text-red-600', bg: 'bg-red-50', badge: 'bg-red-100 text-red-700' },
             green: { text: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
             yellow: { text: 'text-amber-600', bg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700' }
         };
-
         document.addEventListener("DOMContentLoaded", () => {
             // Mobile Menu
             const mobileBtn = document.getElementById('mobile-menu-btn');
@@ -224,7 +219,6 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars'); 
                 }
             });
-
             mobileLinks.forEach(link => {
                 link.addEventListener('click', () => {
                     mobileMenu.classList.add('hidden');
@@ -233,12 +227,11 @@ const globalData = {
                     mobileIcon.classList.add('fa-bars');
                 });
             });
-
             document.getElementById('app-logo-container').innerHTML = ASSETS.global.logo;
             document.getElementById('app-title-line1').innerHTML = ASSETS.global.titleLine1;
             document.getElementById('app-title-line2').innerHTML = ASSETS.global.titleLine2;
             document.getElementById('app-footer').innerText = ASSETS.global.footerText;
-
+            
             // Render Mục 1: Cơ quan nhà nước
             const nhaNuocContainer = document.getElementById('nhanuoc-list');
             ASSETS.coQuanNhaNuoc.forEach((item, index) => {
@@ -312,7 +305,6 @@ const globalData = {
                 strings: ASSETS.global.subtitles,
                 typeSpeed: 60, backSpeed: 30, backDelay: 2500, loop: true
             });
-
             AOS.init({ duration: 800, once: true, offset: 50 });
         });
 
@@ -392,13 +384,14 @@ const globalData = {
                     <div class="mt-4">
                         <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-images text-brand-blue"></i> Thư viện hình ảnh</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                             ${data.gallery.map(img => `
+                            ${data.gallery.map(img => `
                                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden group/img cursor-pointer hover:shadow-md transition-all duration-300 hover:border-brand-blue/30">
                                     <div class="aspect-[4/3] overflow-hidden bg-slate-100"><img src="${img.image || img}" alt="${img.caption || 'Hình ảnh'}" class="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/500x375/e2e8f0/64748b?text=Hinh+Anh';"></div>
                                     <div class="p-3 bg-white text-center"><p class="text-sm font-medium text-slate-700">${img.caption || ''}</p></div>
                                 </div>`).join('')}
                         </div>
                     </div>` : '';
+                
                 const card = document.createElement('div');
                 card.className = "animate-[fadeInUp_0.4s_ease_forwards]";
                 card.innerHTML = `
@@ -449,7 +442,6 @@ const globalData = {
                 }
             }
         });
-        
         window.addEventListener('popstate', (event) => {
             if (!modal.classList.contains('hidden')) {
                 window.closeModal(true); 
@@ -494,8 +486,7 @@ const globalData = {
         </div>
 
         <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#f8f9fa] flex flex-col gap-4 text-sm custom-scrollbar pb-6 scroll-smooth">
-            <!-- Tin nhắn sẽ hiển thị ở đây -->
-        </div>
+            </div>
 
         <div class="p-3 bg-white border-t border-gray-100 z-10">
             <div class="relative flex items-center">
@@ -508,8 +499,7 @@ const globalData = {
         </div>
     </div>
 
-    <!-- THẺ SCRIPT 2: XỬ LÝ CHATBOT (BẢN VÁ: NHÚNG TRỰC TIẾP DỮ LIỆU BẰNG DEFINE:VARS) -->
-    <script is:inline define:vars={{ coQuanData }}>
+    <script is:inline>
         document.addEventListener('DOMContentLoaded', () => {
             const chatToggle = document.getElementById('chat-toggle');
             const chatWindow = document.getElementById('chat-window');
@@ -545,21 +535,12 @@ const globalData = {
             renderHistory();
 
             function formatMarkdown(text) {
-                // Đổi dấu ** thành thẻ <strong> để in đậm
                 let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-                
-                // Tìm URL trong câu trả lời
                 const urlMatch = html.match(/(https?:\/\/[^\s)]+)/);
                 if (urlMatch) {
                     const url = urlMatch[0];
-                    
-                    // Xóa đường link thô ra khỏi văn bản
-                    html = html.replace(/(https?:\/\/[^\s)]+)/g, ""); 
-                    
-                    // BỘ LỌC MỚI: Xóa sạch các chữ thừa như "Link bản đồ:", "Link:", "Bản đồ:"
+                    html = html.replace(/(https?:\/\/[^\s)]+)/g, "");
                     html = html.replace(/(?:Link bản đồ|Link chỉ đường|Bản đồ|Link|Xem bản đồ tại)\s*:?\s*/gi, "").trim();
-                    
-                    // Thêm nút bấm tuyệt đẹp
                     html += `<div class="mt-3"><a href="${url}" target="_blank" class="inline-flex items-center px-4 py-2 bg-[#005bb5] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-blue-700 transition-colors"><i class="fa-solid fa-map-location-dot mr-2"></i> Chỉ đường ngay</a></div>`;
                 }
                 return html;
@@ -593,26 +574,8 @@ const globalData = {
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // THU THẬP TÊN NHÂN SỰ TỪ BIẾN ĐƯỢC NHÚNG TRỰC TIẾP TỪ ASTRO
-                let webContext = "THÔNG TIN CƠ CẤU TỔ CHỨC VÀ NHÂN SỰ CHÍNH XÁC NHẤT (Nếu không có tên trong danh sách này, vui lòng trả lời là chưa cập nhật):\n";
-                if (coQuanData) {
-                    coQuanData.forEach(cq => {
-                        if (cq.departments) {
-                            cq.departments.forEach(dept => {
-                                let cleanRoles = (dept.rolesHtml || '')
-                                    .replace(/<\/div>/g, ', ') 
-                                    .replace(/<[^>]*>?/gm, '')
-                                    .trim();
-                                cleanRoles = cleanRoles.replace(/,\s*$/, "");
-                                
-                                webContext += `\n* Cơ quan: ${cq.title} - Phòng ban/Tổ chức: ${dept.name}\n`;
-                                webContext += `  - Cán bộ phụ trách: ${dept.personName || 'Đang cập nhật'}\n`;
-                                webContext += `  - Chức danh/Chức vụ: ${cleanRoles}\n`;
-                            });
-                        }
-                    });
-                }
-                console.log("=== DỮ LIỆU ĐANG BƠM CHO AI ===", webContext);
+                // CHỐT CHẶN: Đã xóa vòng lặp gộp dữ liệu tại đây để bảo vệ RAM
+                let webContext = ""; 
 
                 chatInput.value = '';
                 chatInput.disabled = true;
@@ -631,7 +594,7 @@ const globalData = {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: message, history: chatHistory, webData: webContext }) 
                     });
-                    
+
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder("utf-8");
 
@@ -641,6 +604,7 @@ const globalData = {
                         
                         const chunk = decoder.decode(value, { stream: true });
                         const lines = chunk.split('\n');
+
                         for (const line of lines) {
                             if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                                 try {
@@ -665,6 +629,7 @@ const globalData = {
                     chatHistory.push({ role: 'assistant', content: aiFullResponse });
                     if (chatHistory.length > 8) chatHistory = chatHistory.slice(chatHistory.length - 8);
                     localStorage.setItem('tanlap_pro_history', JSON.stringify(chatHistory));
+
                 } catch (error) {
                     console.error("Lỗi Fetch API:", error);
                     const existingBubble = document.getElementById(msgId);
