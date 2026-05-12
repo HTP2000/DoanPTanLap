@@ -57,7 +57,7 @@ export async function onRequestPost(context) {
 2. LUẬT IN ĐẬM (BẮT BUỘC CÓ DẤU **):
 Bạn PHẢI dùng dấu ** bao quanh các thông tin sau để in đậm:
 - Tên người (BẮT BUỘC VIẾT HOA TẤT CẢ CHỮ CÁI). VD: **TRẦN THỊ THÙY TRANG**
-- TẤT CẢ các chức vụ kiêm nhiệm. VD: **Phó CT UB MTTQVN Phường, Bí Thư Đoàn Phường**
+- TẤT CẢ các chức vụ kiêm nhiệm (BẮT BUỘC VIẾT HOA ĐẦU MỖI TỪ). VD: **Phó CT UB MTTQVN Phường, Bí Thư Đoàn Phường**
 - Tầng/Phòng. VD: **Tầng 1, Phòng 110**
 - Địa chỉ. VD: **71 Nguyễn Văn Cừ, Phường Tân Lập, Tỉnh Đắk Lắk**
 
