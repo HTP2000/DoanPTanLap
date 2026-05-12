@@ -8,7 +8,7 @@ export async function onRequest(context) {
     try {
         let chunks = [];
 
-        // 1. KÉO DỮ LIỆU TỪ GOOGLE SHEET (Thủ tục hành chính)
+        // 1. KÉO DỮ LIỆU TỪ GOOGLE SHEET
         if (env.GOOGLE_SCRIPT_URL) {
             const sheetRes = await fetch(env.GOOGLE_SCRIPT_URL);
             if (sheetRes.ok) {
@@ -18,7 +18,11 @@ export async function onRequest(context) {
                     chunks.push({
                         id: `faq-${index}`,
                         text: textContent,
-                        metadata: { type: "thutuc", source: "google_sheet", text: textContent } // Đã thêm trường text vào metadata
+                        metadata: { 
+                            type: "google_sheet", 
+                            source: row.sheet || "KienThucNen", // <--- BẮT LẤY TÊN SHEET
+                            text: textContent 
+                        } 
                     });
                 });
             }
